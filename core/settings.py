@@ -46,6 +46,8 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "accounts",
+    "courses"
 ]
 
 MIDDLEWARE = [
@@ -63,7 +65,7 @@ ROOT_URLCONF = "core.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],
+        "DIRS": [BASE_DIR / "templates"],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -76,6 +78,8 @@ TEMPLATES = [
     },
 ]
 
+AUTH_USER_MODEL = "accounts.CustomUser"
+
 WSGI_APPLICATION = "core.wsgi.application"
 
 
@@ -83,9 +87,13 @@ WSGI_APPLICATION = "core.wsgi.application"
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': env("NAME"),
+        'USER': env("USER"),
+        'PASSWORD': env("PASSWORD"),
+        'HOST': env("HOST"),
+        'PORT': env("PORT"),
     }
 }
 
@@ -120,6 +128,11 @@ USE_I18N = True
 
 USE_TZ = True
 
+MEDIA_URL = 'media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+
+
+STATICFILES_DIRS = [BASE_DIR / "static"]
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
