@@ -1,0 +1,16 @@
+[tool.poetry]
+name = "e-learning"
+version = "0.1.0"
+description = ""
+authors = ["yaser <ydahgan@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+psycopg2 = "^2.9.9"
+pillow = "^10.3.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
