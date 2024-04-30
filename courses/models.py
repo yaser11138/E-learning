@@ -5,6 +5,14 @@ from django.contrib.auth import get_user_model
 UserModel = get_user_model()
 
 
+class CreateUpdateDate(models.Model):
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        abstract = True
+
+
 class Subject(models.Model):
     title = models.CharField(max_length=200)
     slug = models.SlugField(max_length=200, unique=True)
@@ -16,7 +24,7 @@ class Subject(models.Model):
         return self.title
 
 
-class Course(models.Model):
+class Course(CreateUpdateDate):
     title = models.CharField(max_length=50)
     price = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     subject = models.ForeignKey(Subject, on_delete=models.CASCADE, related_name='courses')
@@ -25,8 +33,6 @@ class Course(models.Model):
     thumbnail = models.ImageField()
     owner = models.ForeignKey(UserModel, on_delete=models.CASCADE)
     slug = models.SlugField(null=False, unique=True)
-    created = models.DateTimeField(auto_now_add=True)
-    updated = models.DateTimeField(auto_now=True)
 
     class Meta:
         ordering = ['-created']
@@ -43,7 +49,7 @@ class Course(models.Model):
             return False
 
 
-class Module(models.Model):
+class Module(CreateUpdateDate):
     course = models.ForeignKey(Course, related_name='modules',
                                on_delete=models.CASCADE)
     title = models.CharField(max_length=200)
@@ -57,13 +63,10 @@ class Module(models.Model):
         return self.title
 
 
-class Content(models.Model):
+class Content(CreateUpdateDate):
     module = models.ForeignKey(Module, related_name="contents",
                                on_delete=models.CASCADE)
     is_free = models.BooleanField(default=False)
-    description = models.TextField()
-    created = models.DateTimeField(auto_now_add=True)
-    updated = models.DateTimeField(auto_now=True)
     video_content = models.URLField()
     text_content = models.TextField()
     file_content = models.FileField(upload_to="images")
@@ -72,14 +75,3 @@ class Content(models.Model):
 
     class Meta:
         ordering = ['order']
-
-    @property
-    def content(self):
-        if self.video_content:
-            return self.video_content
-        elif self.text_content:
-            return self.text_content
-        elif self.file_content:
-            return self.file_content
-        elif self.image_content:
-            return self.image_content
