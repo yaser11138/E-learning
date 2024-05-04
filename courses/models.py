@@ -66,6 +66,7 @@ class Module(CreateUpdateDate):
 class Content(CreateUpdateDate):
     module = models.ForeignKey(Module, related_name="contents",
                                on_delete=models.CASCADE)
+    slug = models.SlugField(null=False, unique=True)
     is_free = models.BooleanField(default=False)
     video_content = models.URLField()
     text_content = models.TextField()
