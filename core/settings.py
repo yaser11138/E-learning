@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "django.contrib.sites",
     "accounts",
     "courses",
     "rest_framework",
@@ -58,6 +59,8 @@ INSTALLED_APPS = [
     "polymorphic",
 ]
 
+SITE_ID = 1
+EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"  # For development
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
@@ -95,6 +98,9 @@ AUTHENTICATION_BACKENDS = [
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": ("dj_rest_auth.jwt_auth.JWTCookieAuthentication",)
 }
+
+ACCOUNT_EMAIL_VERIFICATION = "none"  # Disable email verification
+ACCOUNT_AUTHENTICATION_METHOD = "username"
 
 REST_AUTH = {
     "USE_JWT": True,
