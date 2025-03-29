@@ -69,6 +69,7 @@ class Content(PolymorphicModel):
     module = models.ForeignKey(
         Module, related_name="contents", on_delete=models.CASCADE
     )
+    order = OrderField(blank=True, for_fields=["module"])
     owner = models.ForeignKey(
         UserModel, related_name="content_related", on_delete=models.CASCADE
     )
