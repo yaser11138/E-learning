@@ -57,6 +57,8 @@ INSTALLED_APPS = [
     "dj_rest_auth",
     "dj_rest_auth.registration",
     "polymorphic",
+    'drf_spectacular',
+    'drf_spectacular_sidecar',
 ]
 
 SITE_ID = 1
@@ -96,7 +98,8 @@ AUTHENTICATION_BACKENDS = [
 ]
 
 REST_FRAMEWORK = {
-    "DEFAULT_AUTHENTICATION_CLASSES": ("dj_rest_auth.jwt_auth.JWTCookieAuthentication",)
+    "DEFAULT_AUTHENTICATION_CLASSES": ["dj_rest_auth.jwt_auth.JWTCookieAuthentication"],
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 }
 
 ACCOUNT_EMAIL_VERIFICATION = "none"  # Disable email verification
@@ -109,6 +112,17 @@ REST_AUTH = {
 SITE_ID = 1
 
 AUTH_USER_MODEL = "accounts.CustomUser"
+
+
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Your Project API',
+    'DESCRIPTION': 'Your project description',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+    'SWAGGER_UI_DIST': 'SIDECAR',
+    'SWAGGER_UI_FAVICON_HREF': 'SIDECAR',
+    'REDOC_DIST': 'SIDECAR',
+}
 
 WSGI_APPLICATION = "core.wsgi.application"
 

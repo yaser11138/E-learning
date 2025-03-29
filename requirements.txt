@@ -6,6 +6,10 @@
 #
 asgiref==3.8.1
     # via django
+attrs==25.3.0
+    # via
+    #   jsonschema
+    #   referencing
 certifi==2025.1.31
     # via requests
 cffi==1.17.1
@@ -26,6 +30,8 @@ django==4.2.5
     #   django-polymorphic
     #   djangorestframework
     #   djangorestframework-simplejwt
+    #   drf-spectacular
+    #   drf-spectacular-sidecar
 django-allauth==0.52.0
     # via -r requirements.in
 django-environ==0.12.0
@@ -37,10 +43,21 @@ djangorestframework==3.15.1
     #   -r requirements.in
     #   dj-rest-auth
     #   djangorestframework-simplejwt
+    #   drf-spectacular
 djangorestframework-simplejwt==5.3.1
     # via -r requirements.in
+drf-spectacular[sidecar]==0.28.0
+    # via -r requirements.in
+drf-spectacular-sidecar==2025.3.1
+    # via drf-spectacular
 idna==3.10
     # via requests
+inflection==0.5.1
+    # via drf-spectacular
+jsonschema==4.23.0
+    # via drf-spectacular
+jsonschema-specifications==2024.10.1
+    # via jsonschema
 oauthlib==3.2.2
     # via requests-oauthlib
 pillow==10.3.0
@@ -55,15 +72,29 @@ pyjwt[crypto]==2.10.1
     #   djangorestframework-simplejwt
 python3-openid==3.2.0
     # via django-allauth
+pyyaml==6.0.2
+    # via drf-spectacular
+referencing==0.36.2
+    # via
+    #   jsonschema
+    #   jsonschema-specifications
 requests==2.32.3
     # via
     #   django-allauth
     #   requests-oauthlib
 requests-oauthlib==2.0.0
     # via django-allauth
+rpds-py==0.24.0
+    # via
+    #   jsonschema
+    #   referencing
 sqlparse==0.5.3
     # via django
+typing-extensions==4.13.0
+    # via referencing
 tzdata==2025.2
     # via django
+uritemplate==4.1.1
+    # via drf-spectacular
 urllib3==2.3.0
     # via requests

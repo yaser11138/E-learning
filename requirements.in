@@ -7,4 +7,5 @@ dj-rest-auth == 4.0.0
 djangorestframework-simplejwt == 5.3.1
 django-environ
 django-polymorphic
-
+drf_spectacular
+drf-spectacular[sidecar]
