@@ -1,8 +1,8 @@
-from django.shortcuts import render
 from django.contrib.auth import get_user_model
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.permissions import IsAuthenticated
 from dj_rest_auth.registration.views import RegisterView
 from .serializers import StudentRegisterSerializer, StudentProfileSerializer, InstructorProfileSerializer
 from drf_spectacular.utils import extend_schema, OpenApiExample
@@ -16,6 +16,8 @@ class studentRegistrationView(RegisterView):
 
 
 class ProfileViewUpdate(APIView):
+    permission_classes = [IsAuthenticated]
+
     def _get_user_serializer(self, user, data=None, partial=False):
         """Helper method to determine correct serializer"""
         if hasattr(user, "student"):
