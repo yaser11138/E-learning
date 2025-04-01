@@ -1,5 +1,6 @@
 from django.db import models
 from django.core.exceptions import ObjectDoesNotExist
+from django.utils.text import slugify
 
 
 class OrderField(models.PositiveIntegerField):
@@ -28,3 +29,15 @@ class OrderField(models.PositiveIntegerField):
                 return value
             else:
                 return super().pre_save(model_instance, add)
+
+
+class AutoSlugField(models.SlugField):
+    def __init__(self, *args, populate_from=None, **kwargs):
+        self.populate_from = populate_from
+        super().__init__(*args, **kwargs)
+
+    def pre_save(self, model_instance, add):
+        value = getattr(model_instance, self.populate_from)
+        slug = slugify(value)
+        setattr(model_instance, self.attname, slug)
+        return slug
