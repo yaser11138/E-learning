@@ -41,8 +41,7 @@ class CourseSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Course
-        fields = "__all__"
-        exclude = ["slug"]
+        exclude = ["slug", "owner"]
 
 
 class CourseListSerializer(serializers.ModelSerializer):
