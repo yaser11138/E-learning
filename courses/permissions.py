@@ -7,3 +7,13 @@ class IsInstructor(BasePermission):
             return True
         else:
             return False
+
+class IsOwner(BasePermission):
+    def has_object_permission(self, request, view, obj=None):
+        if request.user == obj.owner:
+            return True
+        else:
+            return False
+
+
+
