@@ -1,6 +1,7 @@
+import uuid
 from django.db import models
 from django.contrib.auth import get_user_model
-from .fields import OrderField
+from .fields import OrderField, AutoSlugField
 from polymorphic.models import PolymorphicModel
 
 UserModel = get_user_model()
@@ -26,7 +27,7 @@ class Subject(models.Model):
 
 
 class Course(CreateUpdateDate):
-    title = models.CharField(max_length=50)
+    title = models.CharField(max_length=50,unique=True)
     price = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     subject = models.ForeignKey(
         Subject, on_delete=models.CASCADE, related_name="courses"
@@ -35,13 +36,14 @@ class Course(CreateUpdateDate):
     summary = models.TextField()
     thumbnail = models.ImageField()
     owner = models.ForeignKey(UserModel, on_delete=models.CASCADE)
-    slug = models.SlugField(null=False, unique=True)
+    slug = AutoSlugField(null=False, populate_from="title")
+
     class Meta:
         ordering = ["-created"]
         verbose_name_plural = "courses"
 
     def __str__(self):
-        return f"{self.title} by {self.owner.fullname}"
+        return f"{self.title} by {self.owner.get_full_name()}"
 
     @property
     def is_free(self):
@@ -54,6 +56,7 @@ class Course(CreateUpdateDate):
 class Module(CreateUpdateDate):
     course = models.ForeignKey(Course, related_name="modules", on_delete=models.CASCADE)
     title = models.CharField(max_length=200)
+    slug = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     description = models.TextField(blank=True)
     order = OrderField(blank=True, for_fields="course")
 
@@ -72,11 +75,11 @@ class Content(PolymorphicModel):
     owner = models.ForeignKey(
         UserModel, related_name="content_related", on_delete=models.CASCADE
     )
+    slug = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     title = models.CharField(max_length=250)
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
     is_free = models.BooleanField(default=False)
-
 
 class VideoContent(Content):
     video_file = models.FileField(upload_to="videos/")
