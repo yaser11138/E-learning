@@ -26,6 +26,9 @@ class StudentRegisterSerializer(RegisterSerializer):
 
     def save(self, request):
         user = super().save(request)
+        user.first_name = self.cleaned_data["first_name"]
+        user.last_name = self.cleaned_data["last_name"]
+        user.save()
         student_data = self.validated_data["student"]
         Student.objects.create(user=user, **student_data)
         return user
@@ -43,13 +46,13 @@ class StudentProfileSerializer(serializers.ModelSerializer):
         if hasattr(instance, "student"):
             student = instance.student
         else:
-            return serializers.ValidationError("the instance doesn't have student attribute")
+            raise serializers.ValidationError("the instance doesn't have student attribute")
         for attr in validated_data:
-            setattr(instance,attr,validated_data[attr])
-
+            setattr(instance, attr, validated_data[attr])
+        instance.save()
         for attr in student_data:
             setattr(student, attr, student_data[attr])
-
+        student.save()
         return instance
 
 
@@ -61,15 +64,16 @@ class InstructorProfileSerializer(serializers.ModelSerializer):
         fields = ["first_name", "last_name", "instructor"]
 
     def update(self, instance, validated_data):
-        student_data = validated_data.pop("instructor")
+        instructor_data = validated_data.pop("instructor")
         if hasattr(instance, "instructor"):
-            student = instance.student
+            instructor = instance.instructor
         else:
-            return serializers.ValidationError("the instance doesn't have instructor attribute")
+            raise serializers.ValidationError("the instance doesn't have instructor attribute")
         for attr in validated_data:
-            setattr(instance,attr,validated_data[attr])
+            setattr(instance, attr, validated_data[attr])
+        instance.save()
 
-        for attr in student_data:
-            setattr(student, attr, student_data[attr])
-
+        for attr in instructor_data:
+            setattr(instructor, attr, instructor_data[attr])
+        instructor.save()
         return instance
