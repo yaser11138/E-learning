@@ -33,7 +33,9 @@ class ModuleSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Module
-        fields = ["order", "title", "description", "contents"]
+        fields = ["order", "slug", "title", "description", "contents"]
+        extra_kwargs = {'order': {'read_only': True},
+                        'slug': {'read_only': True}}
 
 
 class CourseSerializer(serializers.ModelSerializer):
