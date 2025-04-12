@@ -54,6 +54,7 @@ INSTALLED_APPS = [
     "rest_framework.authtoken",
     "allauth",
     "allauth.account",
+    "allauth.socialaccount",
     "dj_rest_auth",
     "dj_rest_auth.registration",
     "polymorphic",
@@ -62,6 +63,7 @@ INSTALLED_APPS = [
 ]
 
 SITE_ID = 1
+
 EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"  # For development
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -109,7 +111,6 @@ REST_AUTH = {
     "USE_JWT": True,
 }
 
-SITE_ID = 1
 
 AUTH_USER_MODEL = "accounts.CustomUser"
 
