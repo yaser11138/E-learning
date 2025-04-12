@@ -58,7 +58,7 @@ class Module(CreateUpdateDate):
     title = models.CharField(max_length=200)
     slug = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     description = models.TextField(blank=True)
-    order = OrderField(blank=True, for_fields="course")
+    order = OrderField(blank=True, for_fields=["course"])
 
     class Meta:
         ordering = ["order"]
@@ -80,6 +80,7 @@ class Content(PolymorphicModel):
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
     is_free = models.BooleanField(default=False)
+
 
 class VideoContent(Content):
     video_file = models.FileField(upload_to="videos/")
