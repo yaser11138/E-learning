@@ -28,6 +28,7 @@ django==4.2.5
     #   dj-rest-auth
     #   django-allauth
     #   django-polymorphic
+    #   django-rest-polymorphic
     #   djangorestframework
     #   djangorestframework-simplejwt
     #   drf-spectacular
@@ -37,11 +38,16 @@ django-allauth==0.52.0
 django-environ==0.12.0
     # via -r requirements.in
 django-polymorphic==3.1.0
+    # via
+    #   -r requirements.in
+    #   django-rest-polymorphic
+django-rest-polymorphic==0.1.10
     # via -r requirements.in
 djangorestframework==3.15.1
     # via
     #   -r requirements.in
     #   dj-rest-auth
+    #   django-rest-polymorphic
     #   djangorestframework-simplejwt
     #   drf-spectacular
 djangorestframework-simplejwt==5.3.1
@@ -88,6 +94,8 @@ rpds-py==0.24.0
     # via
     #   jsonschema
     #   referencing
+six==1.17.0
+    # via django-rest-polymorphic
 sqlparse==0.5.3
     # via django
 typing-extensions==4.13.0
