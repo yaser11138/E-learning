@@ -72,9 +72,6 @@ class Content(PolymorphicModel):
         Module, related_name="contents", on_delete=models.CASCADE
     )
     order = OrderField(blank=True, for_fields=["module"])
-    owner = models.ForeignKey(
-        UserModel, related_name="content_related", on_delete=models.CASCADE
-    )
     slug = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     title = models.CharField(max_length=250)
     created = models.DateTimeField(auto_now_add=True)
