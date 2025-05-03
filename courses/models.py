@@ -95,15 +95,5 @@ class FileContent(Content):
     file = models.FileField(upload_to="files/")
 
 
-class Enrollment(models.Model):
-    class StatusChoices(models.TextChoices):
-        Completed = "COMPLETED", "Completed"
-        In_progress = "IN PROGRESS", "In progress"
-        reached_deadline = "REACHED DEADLINE", "reached deadline"
 
-    user = models.ForeignKey(UserModel, related_name="enrollments", on_delete=models.CASCADE)
-    course = models.ForeignKey(Course, related_name="enrollments", on_delete=models.CASCADE)
-    created = models.DateTimeField(auto_now_add=True)
-    access_days = models.PositiveSmallIntegerField()
-    status = models.CharField(choices=StatusChoices.choices)
 
