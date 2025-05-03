@@ -7,9 +7,9 @@ from rest_framework import status
 from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample
 from rest_framework.permissions import IsAuthenticated
 from drf_spectacular.types import OpenApiTypes
-from .serializers import CourseSerializer, ModuleSerializer
+from .serializers import CourseSerializer, ModuleSerializer, ContentSerializer
 from .permissions import IsInstructor, IsOwner
-from .models import Course, Module
+from .models import Course, Module, Content
 
 
 class CourseViewSet(ModelViewSet):
@@ -44,6 +44,16 @@ class CourseViewSet(ModelViewSet):
         return super().update(request, *args, **kwargs)
 
     @extend_schema(
+        summary="Partial Update an existing course",
+        description="Updates the course with the given slug",
+        request=CourseSerializer,
+        responses={200: CourseSerializer, 400: OpenApiTypes.OBJECT},
+        tags=["course"]
+    )
+    def partial_update(self, request, *args, **kwargs):
+        return super().partial_update(request, *args, **kwargs)
+
+    @extend_schema(
         summary="Delete a course",
         description="Deletes the course with the given slug",
         responses={200: OpenApiTypes.OBJECT, 404: OpenApiTypes.OBJECT},
@@ -72,7 +82,7 @@ class ModuleListView(APIView):
     )
     def get(self, request, slug: str = None):
         course = get_object_or_404(Course, slug=slug)
-        self.check_object_permissions(request, course.owner)
+        self.check_object_permissions(request, course)
         course_modules_serializer = ModuleSerializer(instance=course.modules, many=True)
         return Response(data=course_modules_serializer.data, status=status.HTTP_200_OK)
 
@@ -136,7 +146,7 @@ class ModuleViewSet(ViewSet):
     )
     def update(self, request, slug: str = None):
         module = get_object_or_404(Module, slug=slug)
-        self.check_object_permissions(request, module.course.owner)
+        self.check_object_permissions(request, module.course)
         module_serializer = ModuleSerializer(instance=module, data=request.data, partial=True)
         if module_serializer.is_valid():
             module_serializer.save()
@@ -157,6 +167,273 @@ class ModuleViewSet(ViewSet):
     )
     def destroy(self, request, slug: str = None):
         module = get_object_or_404(Module, slug=slug)
-        self.check_object_permissions(request, module.course.owner)
+        self.check_object_permissions(request, module.course)
         module.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class ContentViewListCreate(APIView):
+    permission_classes = [IsAuthenticated, IsOwner, IsInstructor]
+    parser_classes = (MultiPartParser, FormParser)
+
+    @extend_schema(
+        summary="List module contents",
+        description="Get all contents for a specific module",
+        responses={
+            200: ContentSerializer(many=True),
+            404: {"type": "object", "properties": {"detail": {"type": "string"}}}
+        },
+        parameters=[
+            OpenApiParameter(
+                name="module_slug",
+                location=OpenApiParameter.PATH,
+                description="Unique slug identifier of the module",
+                required=True,
+                type=str
+            )
+        ],
+        tags=["contents"]
+    )
+    def get(self, request, module_slug):
+        module = get_object_or_404(Module, slug=module_slug)
+        contents = module.contents.all()
+        serializer = ContentSerializer(instance=contents, many=True)
+        return Response(data=serializer.data, status=status.HTTP_200_OK)
+
+    @extend_schema(
+        summary="Create module content",
+        description="Create a new content item for a specific module. Use multipart/form-data for file uploads.",
+        request={
+            'multipart/form-data': {
+                'type': 'object',
+                'properties': {
+                    'title': {
+                        'type': 'string',
+                        'description': 'Title of the content'
+                    },
+                    'is_free': {
+                        'type': 'boolean',
+                        'description': 'Whether the content is free to access'
+                    },
+                    'resource_type': {
+                        'type': 'string',
+                        'description': 'Type of resource',
+                        'enum': ['text', 'video', 'image', 'file']
+                    },
+                    'text': {
+                        'type': 'string',
+                        'description': 'Text content if resource_type is text'
+                    },
+                    'video_file': {
+                        'type': 'string',
+                        'format': 'binary',
+                        'description': 'Video file if resource_type is video'
+                    },
+                    'image': {
+                        'type': 'string',
+                        'format': 'binary',
+                        'description': 'Image file if resource_type is image'
+                    },
+                    'file': {
+                        'type': 'string',
+                        'format': 'binary',
+                        'description': 'Document file if resource_type is file'
+                    }
+                },
+                'required': ['title', 'resource_type']
+            }
+        },
+        responses={
+            201: ContentSerializer,
+            400: {"type": "object", "properties": {"detail": {"type": "string"}}},
+            404: {"type": "object", "properties": {"detail": {"type": "string"}}}
+        },
+        parameters=[
+            OpenApiParameter(
+                name="module_slug",
+                location=OpenApiParameter.PATH,
+                description="Unique slug identifier of the module",
+                required=True,
+                type=str
+            )
+        ],
+        examples=[
+            OpenApiExample(
+                "Text Content Example",
+                summary="Example request for text content",
+                value={
+                    "title": "Introduction to Python",
+                    "description": "Basic Python concepts",
+                    "content_type": "text",
+                    "text_content": "Python is a high-level programming language...",
+                    "order": 1
+                },
+                request_only=True,
+            ),
+            OpenApiExample(
+                "File Upload Example",
+                summary="Example request for file upload",
+                value={
+                    "title": "Python Tutorial PDF",
+                    "description": "Comprehensive Python guide",
+                    "content_type": "file",
+                    "order": 2
+                    # file field would be submitted as actual file
+                },
+                request_only=True,
+            ),
+        ],
+        tags=["contents"]
+    )
+    def post(self, request, module_slug):
+        module = get_object_or_404(Module, slug=module_slug)
+        serializer = ContentSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(module=module)
+            return Response(data=serializer.data, status=status.HTTP_200_OK)
+        else:
+            return Response(data=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class ContentDetailView(ViewSet):
+    """ViewSet for content details operations"""
+
+    parser_classes = [MultiPartParser, FormParser]
+    serializer_class = ContentSerializer
+    lookup_field = "slug"
+
+    def get_permissions(self):
+        if self.action == "retrieve":
+            return [IsAuthenticated()]
+        elif self.action in ["partial_update", "destroy"]:
+            return [IsAuthenticated(), IsInstructor(), IsOwner()]
+        return [IsAuthenticated()]
+
+    @extend_schema(
+        summary="Retrieve content details",
+        description="Get details of a specific content item by slug",
+        parameters=[
+            OpenApiParameter(
+                name="slug",
+                location=OpenApiParameter.PATH,
+                description="Unique slug identifier of the content",
+                required=True,
+                type=str
+            )
+        ],
+        responses={
+            200: ContentSerializer,
+            404: {"type": "object", "properties": {"detail": {"type": "string"}}}
+        },
+        tags=["contents"]
+    )
+    def retrieve(self, request, slug=None):
+        content = get_object_or_404(Content, slug=slug)
+        serializer = ContentSerializer(instance=content)
+        return Response(data=serializer.data, status=status.HTTP_200_OK)
+
+    @extend_schema(
+        summary="Update content",
+        description="Update a specific content item. Use multipart/form-data for file uploads.",
+        parameters=[
+            OpenApiParameter(
+                name="slug",
+                location=OpenApiParameter.PATH,
+                description="Unique slug identifier of the content",
+                required=True,
+                type=str
+            )
+        ],
+        request={
+            'multipart/form-data': {
+                'type': 'object',
+                'properties': {
+                    'title': {
+                        'type': 'string',
+                        'description': 'Title of the content'
+                    },
+                    'description': {
+                        'type': 'string',
+                        'description': 'Description of the content'
+                    },
+                    'is_free': {
+                        'type': 'boolean',
+                        'description': 'Whether the content is free to access'
+                    },
+                    'resourcetype': {
+                        'type': 'string',
+                        'description': 'Type of resource',
+                        'enum': ['TextContent', 'VideoContent', 'ImageContent', 'FileContent']
+                    },
+                    'text': {
+                        'type': 'string',
+                        'description': 'Text content if resourcetype is text'
+                    },
+                    'video_file': {
+                        'type': 'string',
+                        'format': 'binary',
+                        'description': 'Video file if resourcetype is video'
+                    },
+                    'image': {
+                        'type': 'string',
+                        'format': 'binary',
+                        'description': 'Image file if resourcetype is image'
+                    },
+                    'file': {
+                        'type': 'string',
+                        'format': 'binary',
+                        'description': 'Document file if resourcetype is file'
+                    },
+                    'order': {
+                        'type': 'integer',
+                        'description': 'Order position of the content'
+                    }
+                }
+            }
+        },
+        responses={
+            200: ContentSerializer,
+            400: {"type": "object", "properties": {"detail": {"type": "string"}}},
+            403: {"type": "object", "properties": {"detail": {"type": "string"}}},
+            404: {"type": "object", "properties": {"detail": {"type": "string"}}}
+        },
+        tags=["contents"]
+    )
+    def partial_update(self, request, slug=None):
+        content = get_object_or_404(Content, slug=slug)
+        self.check_object_permissions(request, content.module.course)
+        serializer = ContentSerializer(data=request.data, instance=content, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(data=serializer.data)
+        return Response(data=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @extend_schema(
+        summary="Delete content",
+        description="Delete a specific content item",
+        parameters=[
+            OpenApiParameter(
+                name="slug",
+                location=OpenApiParameter.PATH,
+                description="Unique slug identifier of the content",
+                required=True,
+                type=str
+            )
+        ],
+        responses={
+            204: None,
+            403: {"type": "object", "properties": {"detail": {"type": "string"}}},
+            404: {"type": "object", "properties": {"detail": {"type": "string"}}}
+        },
+        tags=["contents"]
+    )
+    def destroy(self, request, slug=None):
+        content = get_object_or_404(Content, slug=slug)
+        self.check_object_permissions(request, content.module.course)
+        content.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+
+
+
