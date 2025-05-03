@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     "django.contrib.sites",
     "accounts",
     "courses",
+    "enrollment",
     "rest_framework",
     "rest_framework.authtoken",
     "allauth",
