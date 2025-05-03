@@ -1,35 +1,48 @@
 from rest_framework import serializers
-from courses.models import Subject, Content, Module, Course
+from courses.models import Subject, Content, Module, Course, VideoContent, TextContent, FileContent, ImageContent
+from rest_polymorphic.serializers import PolymorphicSerializer
 
 
-class ContentSerializer(serializers.ModelSerializer):
-    contents = serializers.SerializerMethodField()
-
+class VideoContentSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Content
-        fields = ["order", "is_free", "contents"]
-
-    def get_contents(self, obj):
-        contents = {}
-        if obj.text_content is not None:
-            contents["text"] = obj.text_content
-        if obj.image_content is not None:
-            contents["image"] = obj.image_content
-        if obj.video_content is not None:
-            contents["video"] = obj.video_content
-        if obj.file_content is not None:
-            contents["file"] = obj.file_content
-        return contents
+        model = VideoContent
+        fields = '__all__'
+        extra_kwargs = {"module": {"read_only": True}}
 
 
-class ContentListSerializer(serializers.ModelSerializer):
+class ImageContentSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Content
-        fields = ["order", "is_free", "slug"]
+        model = ImageContent
+        fields = '__all__'
+        extra_kwargs = {"module": {"read_only": True}}
+
+
+class FileContentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FileContent
+        fields = '__all__'
+        extra_kwargs = {"module": {"read_only": True}}
+
+
+class TextContentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TextContent
+        fields = '__all__'
+        extra_kwargs = {"module": {"read_only": True}}
+
+
+class ContentSerializer(PolymorphicSerializer):
+    model_serializer_mapping = {
+        VideoContent: VideoContentSerializer,
+        ImageContent: ImageContentSerializer,
+        TextContent: TextContentSerializer,
+        FileContent: FileContentSerializer,
+    }
 
 
 class ModuleSerializer(serializers.ModelSerializer):
-    contents = ContentListSerializer(many=True, read_only=True)
+    contents = serializers.HyperlinkedRelatedField(many=True, read_only=True, view_name="content-detail",
+                                                   lookup_field="slug")
 
     class Meta:
         model = Module
