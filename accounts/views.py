@@ -18,12 +18,12 @@ class studentRegistrationView(RegisterView):
 class ProfileViewUpdate(APIView):
     permission_classes = [IsAuthenticated]
 
-    def _get_user_serializer(self, user, data=None, partial=False):
+    def _get_user_serializer(self, user):
         """Helper method to determine correct serializer"""
         if hasattr(user, "student"):
-            return StudentProfileSerializer(instance=user, data=data, partial=partial)
+            return StudentProfileSerializer
         elif hasattr(user, "instructor"):
-            return InstructorProfileSerializer(instance=user, data=data, partial=partial)
+            return InstructorProfileSerializer
         return None
 
     @extend_schema(
@@ -36,15 +36,14 @@ class ProfileViewUpdate(APIView):
     )
     def get(self, request):
         user = request.user
-        serializer = self._get_user_serializer(user)
-
-        if serializer is None:
+        serializer_class = self._get_user_serializer(user)
+        if serializer_class is None:
             return Response(
                 {"error": "User is neither a student nor an instructor"},
                 status=status.HTTP_400_BAD_REQUEST
             )
-
-        return Response(serializer.data)
+        user_serializer = serializer_class(instance=user)
+        return Response(data=user_serializer.data,status=status.HTTP_200_OK)
 
     @extend_schema(
         summary="Update profile",
@@ -71,16 +70,16 @@ class ProfileViewUpdate(APIView):
     )
     def put(self, request):
         user = request.user
-        serializer = self._get_user_serializer(user, data=request.data, partial=True)
+        serializer_class = self._get_user_serializer(user)
 
-        if serializer is None:
+        if serializer_class is None:
             return Response(
                 {"error": "User is neither a student nor an instructor"},
                 status=status.HTTP_400_BAD_REQUEST
             )
-
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        user_serializer = serializer_class(instance=user, data=request.data, partial=True)
+        if user_serializer.is_valid():
+            user_serializer.save()
+            return Response(user_serializer.data)
+        return Response(user_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
