@@ -8,7 +8,7 @@ from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExampl
 from rest_framework.permissions import IsAuthenticated
 from drf_spectacular.types import OpenApiTypes
 from .serializers import CourseSerializer, ModuleSerializer, ContentSerializer
-from .permissions import IsInstructor, IsOwner
+from core.permissions import IsInstructor, IsOwner
 from .models import Course, Module, Content
 
 
