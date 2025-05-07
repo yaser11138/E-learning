@@ -17,7 +17,7 @@ class Enrollment(models.Model):
     course = models.ForeignKey(Course, related_name="enrollments", on_delete=models.CASCADE)
     started = models.DateField(auto_now_add=True)
     deadline = models.DateField()
-    status = models.CharField(choices=StatusChoices.choices)
+    status = models.CharField(choices=StatusChoices.choices, default=StatusChoices.In_progress)
 
     @property
     def deadline_reached(self):
