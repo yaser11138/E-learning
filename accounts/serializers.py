@@ -26,8 +26,8 @@ class StudentRegisterSerializer(RegisterSerializer):
 
     def save(self, request):
         user = super().save(request)
-        user.first_name = self.cleaned_data["first_name"]
-        user.last_name = self.cleaned_data["last_name"]
+        user.first_name = self.validated_data["first_name"]
+        user.last_name = self.validated_data["last_name"]
         user.save()
         student_data = self.validated_data["student"]
         Student.objects.create(user=user, **student_data)
