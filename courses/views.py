@@ -4,11 +4,11 @@ from rest_framework.viewsets import ModelViewSet, ViewSet
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework import status
-from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample
+from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample, OpenApiResponse
 from rest_framework.permissions import IsAuthenticated
 from drf_spectacular.types import OpenApiTypes
 from .serializers import CourseSerializer, ModuleSerializer, ContentSerializer
-from core.permissions import IsInstructor, IsOwner
+from core.permissions import IsInstructor, IsOwner, IsStudent
 from .models import Course, Module, Content
 
 
@@ -90,6 +90,7 @@ class ModuleListView(APIView):
 class ModuleCreateView(APIView):
     serializer_class = ModuleSerializer
     permission_classes = [IsAuthenticated, IsInstructor]
+
     @extend_schema(
         summary="Create a module",
         description="Create a new module within a specific course.",
@@ -137,7 +138,7 @@ class ModuleViewSet(ViewSet):
         description="Update an existing module using its slug.",
         parameters=[
             OpenApiParameter(name="slug", location=OpenApiParameter.PATH,
-                             required=True, description= "The unique identifier of the module.", type=str)
+                             required=True, description="The unique identifier of the module.", type=str)
         ],
         request=ModuleSerializer,
         responses={200: ModuleSerializer, 400: {"description": "Invalid input data"},
@@ -301,13 +302,7 @@ class ContentDetailView(ViewSet):
     parser_classes = [MultiPartParser, FormParser]
     serializer_class = ContentSerializer
     lookup_field = "slug"
-
-    def get_permissions(self):
-        if self.action == "retrieve":
-            return [IsAuthenticated()]
-        elif self.action in ["partial_update", "destroy"]:
-            return [IsAuthenticated(), IsInstructor(), IsOwner()]
-        return [IsAuthenticated()]
+    permission_classes = [IsAuthenticated, IsInstructor, IsOwner]
 
     @extend_schema(
         summary="Retrieve content details",
@@ -329,6 +324,7 @@ class ContentDetailView(ViewSet):
     )
     def retrieve(self, request, slug=None):
         content = get_object_or_404(Content, slug=slug)
+        self.check_object_permissions(request, content.module.course)
         serializer = ContentSerializer(instance=content)
         return Response(data=serializer.data, status=status.HTTP_200_OK)
 
@@ -434,6 +430,71 @@ class ContentDetailView(ViewSet):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
+class StudentCourseView(ViewSet):
+    permission_classes = [IsAuthenticated, IsStudent]
+    lookup_field = "slug"
+
+    @extend_schema(
+        summary="Retrieve a specific course",
+        description="Get detailed information about a course by its slug",
+        parameters=[
+            OpenApiParameter(
+                name="slug",
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.PATH,
+                description="Unique slug identifier of the course"
+            ),
+        ],
+        responses={
+            status.HTTP_200_OK: CourseSerializer,
+            status.HTTP_404_NOT_FOUND: OpenApiResponse(description="Course not found"),
+            status.HTTP_403_FORBIDDEN: OpenApiResponse(description="Not authorized"),
+        },
+        tags=["Student Endpoints"]
+    )
+    def retrieve(self, request, slug):
+        course = get_object_or_404(Course, slug=slug)
+        course_serializer = CourseSerializer(instance=course, context={'request': request})
+        return Response(data=course_serializer.data, status=status.HTTP_200_OK)
+
+    @extend_schema(
+        summary="List all courses",
+        description="Get a list of all available courses",
+        responses={
+            status.HTTP_200_OK: CourseSerializer(many=True),
+            status.HTTP_403_FORBIDDEN: OpenApiResponse(description="Not authorized"),
+        },
+        tags=["Student Endpoints"]
+    )
+    def list(self, request):
+        courses = Course.objects.all()
+        course_serializer = CourseSerializer(instance=courses, many=True, context={'request': request})
+        return Response(data=course_serializer.data, status=status.HTTP_200_OK)
 
 
+class StudentContentView(APIView):
+    permission_classes = [IsAuthenticated, IsStudent]
 
+    @extend_schema(
+        summary="Retrieve course content",
+        description="Get detailed information about specific content by its slug",
+        parameters=[
+            OpenApiParameter(
+                name="slug",
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.PATH,
+                description="Unique slug identifier of the content"
+            ),
+        ],
+        responses={
+            status.HTTP_200_OK: ContentSerializer,
+            status.HTTP_404_NOT_FOUND: OpenApiResponse(description="Content not found"),
+            status.HTTP_403_FORBIDDEN: OpenApiResponse(description="Not authorized"),
+        },
+        tags=["Student Endpoints"]
+    )
+    def get(self, request, slug=None):
+        print(slug)
+        content = get_object_or_404(Content, slug=slug)
+        content_serializer = ContentSerializer(instance=content)
+        return Response(data=content_serializer.data, status=status.HTTP_200_OK)
