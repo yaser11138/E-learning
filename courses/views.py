@@ -4,12 +4,23 @@ from rest_framework.viewsets import ModelViewSet, ViewSet
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework import status
-from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample, OpenApiResponse
+from drf_spectacular.utils import (
+    extend_schema,
+    OpenApiParameter,
+    OpenApiExample,
+    OpenApiResponse,
+)
 from rest_framework.permissions import IsAuthenticated
 from drf_spectacular.types import OpenApiTypes
-from .serializers import CourseSerializer, ModuleSerializer, ContentSerializer
+from .serializers import (
+    CourseSerializer,
+    ModuleSerializer,
+    ContentSerializer,
+    CourseProgressSerializer,
+    ContentProgressSerializer,
+)
 from core.permissions import IsInstructor, IsOwner, IsStudent
-from .models import Course, Module, Content
+from .models import Course, Module, Content, CourseProgress, ContentProgress
 
 
 class CourseViewSet(ModelViewSet):
@@ -22,9 +33,9 @@ class CourseViewSet(ModelViewSet):
     @extend_schema(
         summary="Create a new course",
         description="Creates a new course with the provided data, including file uploads",
-        request={'multipart/form-data': CourseSerializer},
+        request={"multipart/form-data": CourseSerializer},
         responses={201: CourseSerializer, 400: OpenApiTypes.OBJECT},
-        tags=["course"]
+        tags=["course"],
     )
     def create(self, request, *args, **kwargs):  # Handles POST
         serializer = self.get_serializer(data=request.data)
@@ -38,7 +49,7 @@ class CourseViewSet(ModelViewSet):
         description="Updates the course with the given slug",
         request=CourseSerializer,
         responses={200: CourseSerializer, 400: OpenApiTypes.OBJECT},
-        tags=["course"]
+        tags=["course"],
     )
     def update(self, request, *args, **kwargs):
         return super().update(request, *args, **kwargs)
@@ -48,7 +59,7 @@ class CourseViewSet(ModelViewSet):
         description="Updates the course with the given slug",
         request=CourseSerializer,
         responses={200: CourseSerializer, 400: OpenApiTypes.OBJECT},
-        tags=["course"]
+        tags=["course"],
     )
     def partial_update(self, request, *args, **kwargs):
         return super().partial_update(request, *args, **kwargs)
@@ -57,13 +68,15 @@ class CourseViewSet(ModelViewSet):
         summary="Delete a course",
         description="Deletes the course with the given slug",
         responses={200: OpenApiTypes.OBJECT, 404: OpenApiTypes.OBJECT},
-        tags=["course"]
+        tags=["course"],
     )
     def destroy(self, request, *args, **kwargs):  # Handles DELETE
         course = self.get_object()
         title = course.title
         self.perform_destroy(course)
-        return Response({"message": f"{title} successfully deleted"}, status=status.HTTP_200_OK)
+        return Response(
+            {"message": f"{title} successfully deleted"}, status=status.HTTP_200_OK
+        )
 
 
 class ModuleListView(APIView):
@@ -74,11 +87,19 @@ class ModuleListView(APIView):
         summary="List all modules in a course",
         description="Retrieve a list of modules associated with a given course slug.",
         parameters=[
-            OpenApiParameter(name="slug", location=OpenApiParameter.PATH,
-                             required=True, description="The unique identifier of the course.", type=str)
+            OpenApiParameter(
+                name="slug",
+                location=OpenApiParameter.PATH,
+                required=True,
+                description="The unique identifier of the course.",
+                type=str,
+            )
         ],
-        responses={200: ModuleSerializer(many=True), 404: {"description": "Course not found"}},
-        tags=["module"]
+        responses={
+            200: ModuleSerializer(many=True),
+            404: {"description": "Course not found"},
+        },
+        tags=["module"],
     )
     def get(self, request, slug: str = None):
         course = get_object_or_404(Course, slug=slug)
@@ -95,13 +116,21 @@ class ModuleCreateView(APIView):
         summary="Create a module",
         description="Create a new module within a specific course.",
         parameters=[
-            OpenApiParameter(name="slug", location=OpenApiParameter.PATH,
-                             required=True, description="The unique identifier of the course.", type=str)
+            OpenApiParameter(
+                name="slug",
+                location=OpenApiParameter.PATH,
+                required=True,
+                description="The unique identifier of the course.",
+                type=str,
+            )
         ],
         request=ModuleSerializer,
-        responses={201: ModuleSerializer, 400: {"description": "Invalid input data"},
-                   404: {"description": "Course not found"}},
-        tags=["module"]
+        responses={
+            201: ModuleSerializer,
+            400: {"description": "Invalid input data"},
+            404: {"description": "Course not found"},
+        },
+        tags=["module"],
     )
     def post(self, request, slug: str):
         course = get_object_or_404(Course, slug=slug)
@@ -122,11 +151,16 @@ class ModuleViewSet(ViewSet):
         summary="Retrieve a module",
         description="Fetch details of a specific module using its slug.",
         parameters=[
-            OpenApiParameter(name="slug", location=OpenApiParameter.PATH,
-                             required=True, description="The unique identifier of the module.", type=str)
+            OpenApiParameter(
+                name="slug",
+                location=OpenApiParameter.PATH,
+                required=True,
+                description="The unique identifier of the module.",
+                type=str,
+            )
         ],
         responses={200: ModuleSerializer, 404: {"description": "Module not found"}},
-        tags=["module"]
+        tags=["module"],
     )
     def retrieve(self, request, slug: str = None):
         module = get_object_or_404(Module, slug=slug)
@@ -137,34 +171,55 @@ class ModuleViewSet(ViewSet):
         summary="Update a module",
         description="Update an existing module using its slug.",
         parameters=[
-            OpenApiParameter(name="slug", location=OpenApiParameter.PATH,
-                             required=True, description="The unique identifier of the module.", type=str)
+            OpenApiParameter(
+                name="slug",
+                location=OpenApiParameter.PATH,
+                required=True,
+                description="The unique identifier of the module.",
+                type=str,
+            )
         ],
         request=ModuleSerializer,
-        responses={200: ModuleSerializer, 400: {"description": "Invalid input data"},
-                   403: {"description": "Permission denied"}, 404: {"description": "Module not found"}},
-        tags=["module"]
+        responses={
+            200: ModuleSerializer,
+            400: {"description": "Invalid input data"},
+            403: {"description": "Permission denied"},
+            404: {"description": "Module not found"},
+        },
+        tags=["module"],
     )
     def update(self, request, slug: str = None):
         module = get_object_or_404(Module, slug=slug)
         self.check_object_permissions(request, module.course)
-        module_serializer = ModuleSerializer(instance=module, data=request.data, partial=True)
+        module_serializer = ModuleSerializer(
+            instance=module, data=request.data, partial=True
+        )
         if module_serializer.is_valid():
             module_serializer.save()
             return Response(data=module_serializer.data, status=status.HTTP_200_OK)
         else:
-            return Response(data=module_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                data=module_serializer.errors, status=status.HTTP_400_BAD_REQUEST
+            )
 
     @extend_schema(
         summary="Delete a module",
         description="Delete a specific module using its slug.",
         parameters=[
-            OpenApiParameter(name="slug", location=OpenApiParameter.PATH, required=True,
-                             description="The unique identifier of the module.", type=str)
+            OpenApiParameter(
+                name="slug",
+                location=OpenApiParameter.PATH,
+                required=True,
+                description="The unique identifier of the module.",
+                type=str,
+            )
         ],
-        responses={204: {"description": "Module deleted successfully"}, 403: {"description": "Permission denied"},
-                   404: {"description": "Module not found"}},
-        tags=["module"]
+        responses={
+            204: {"description": "Module deleted successfully"},
+            403: {"description": "Permission denied"},
+            404: {"description": "Module not found"},
+        },
+        tags=["module"],
     )
     def destroy(self, request, slug: str = None):
         module = get_object_or_404(Module, slug=slug)
@@ -182,7 +237,7 @@ class ContentViewListCreate(APIView):
         description="Get all contents for a specific module",
         responses={
             200: ContentSerializer(many=True),
-            404: {"type": "object", "properties": {"detail": {"type": "string"}}}
+            404: {"type": "object", "properties": {"detail": {"type": "string"}}},
         },
         parameters=[
             OpenApiParameter(
@@ -190,10 +245,10 @@ class ContentViewListCreate(APIView):
                 location=OpenApiParameter.PATH,
                 description="Unique slug identifier of the module",
                 required=True,
-                type=str
+                type=str,
             )
         ],
-        tags=["contents"]
+        tags=["contents"],
     )
     def get(self, request, module_slug):
         module = get_object_or_404(Module, slug=module_slug)
@@ -241,13 +296,13 @@ class ContentViewListCreate(APIView):
                         'description': 'Document file if resource_type is file'
                     }
                 },
-                'required': ['title', 'resource_type']
+                "required": ["title", "resource_type"],
             }
         },
         responses={
             201: ContentSerializer,
             400: {"type": "object", "properties": {"detail": {"type": "string"}}},
-            404: {"type": "object", "properties": {"detail": {"type": "string"}}}
+            404: {"type": "object", "properties": {"detail": {"type": "string"}}},
         },
         parameters=[
             OpenApiParameter(
@@ -255,7 +310,7 @@ class ContentViewListCreate(APIView):
                 location=OpenApiParameter.PATH,
                 description="Unique slug identifier of the module",
                 required=True,
-                type=str
+                type=str,
             )
         ],
         examples=[
@@ -267,7 +322,7 @@ class ContentViewListCreate(APIView):
                     "description": "Basic Python concepts",
                     "content_type": "text",
                     "text_content": "Python is a high-level programming language...",
-                    "order": 1
+                    "order": 1,
                 },
                 request_only=True,
             ),
@@ -278,13 +333,13 @@ class ContentViewListCreate(APIView):
                     "title": "Python Tutorial PDF",
                     "description": "Comprehensive Python guide",
                     "content_type": "file",
-                    "order": 2
+                    "order": 2,
                     # file field would be submitted as actual file
                 },
                 request_only=True,
             ),
         ],
-        tags=["contents"]
+        tags=["contents"],
     )
     def post(self, request, module_slug):
         module = get_object_or_404(Module, slug=module_slug)
@@ -313,14 +368,14 @@ class ContentDetailView(ViewSet):
                 location=OpenApiParameter.PATH,
                 description="Unique slug identifier of the content",
                 required=True,
-                type=str
+                type=str,
             )
         ],
         responses={
             200: ContentSerializer,
-            404: {"type": "object", "properties": {"detail": {"type": "string"}}}
+            404: {"type": "object", "properties": {"detail": {"type": "string"}}},
         },
-        tags=["contents"]
+        tags=["contents"],
     )
     def retrieve(self, request, slug=None):
         content = get_object_or_404(Content, slug=slug)
@@ -337,7 +392,7 @@ class ContentDetailView(ViewSet):
                 location=OpenApiParameter.PATH,
                 description="Unique slug identifier of the content",
                 required=True,
-                type=str
+                type=str,
             )
         ],
         request={
@@ -391,14 +446,16 @@ class ContentDetailView(ViewSet):
             200: ContentSerializer,
             400: {"type": "object", "properties": {"detail": {"type": "string"}}},
             403: {"type": "object", "properties": {"detail": {"type": "string"}}},
-            404: {"type": "object", "properties": {"detail": {"type": "string"}}}
+            404: {"type": "object", "properties": {"detail": {"type": "string"}}},
         },
-        tags=["contents"]
+        tags=["contents"],
     )
     def partial_update(self, request, slug=None):
         content = get_object_or_404(Content, slug=slug)
         self.check_object_permissions(request, content.module.course)
-        serializer = ContentSerializer(data=request.data, instance=content, partial=True)
+        serializer = ContentSerializer(
+            data=request.data, instance=content, partial=True
+        )
         if serializer.is_valid():
             serializer.save()
             return Response(data=serializer.data)
@@ -413,15 +470,15 @@ class ContentDetailView(ViewSet):
                 location=OpenApiParameter.PATH,
                 description="Unique slug identifier of the content",
                 required=True,
-                type=str
+                type=str,
             )
         ],
         responses={
             204: None,
             403: {"type": "object", "properties": {"detail": {"type": "string"}}},
-            404: {"type": "object", "properties": {"detail": {"type": "string"}}}
+            404: {"type": "object", "properties": {"detail": {"type": "string"}}},
         },
-        tags=["contents"]
+        tags=["contents"],
     )
     def destroy(self, request, slug=None):
         content = get_object_or_404(Content, slug=slug)
@@ -442,7 +499,7 @@ class StudentCourseView(ViewSet):
                 name="slug",
                 type=OpenApiTypes.STR,
                 location=OpenApiParameter.PATH,
-                description="Unique slug identifier of the course"
+                description="Unique slug identifier of the course",
             ),
         ],
         responses={
@@ -450,11 +507,13 @@ class StudentCourseView(ViewSet):
             status.HTTP_404_NOT_FOUND: OpenApiResponse(description="Course not found"),
             status.HTTP_403_FORBIDDEN: OpenApiResponse(description="Not authorized"),
         },
-        tags=["Student Endpoints"]
+        tags=["Student Endpoints"],
     )
     def retrieve(self, request, slug):
         course = get_object_or_404(Course, slug=slug)
-        course_serializer = CourseSerializer(instance=course, context={'request': request})
+        course_serializer = CourseSerializer(
+            instance=course, context={"request": request}
+        )
         return Response(data=course_serializer.data, status=status.HTTP_200_OK)
 
     @extend_schema(
@@ -464,11 +523,13 @@ class StudentCourseView(ViewSet):
             status.HTTP_200_OK: CourseSerializer(many=True),
             status.HTTP_403_FORBIDDEN: OpenApiResponse(description="Not authorized"),
         },
-        tags=["Student Endpoints"]
+        tags=["Student Endpoints"],
     )
     def list(self, request):
         courses = Course.objects.all()
-        course_serializer = CourseSerializer(instance=courses, many=True, context={'request': request})
+        course_serializer = CourseSerializer(
+            instance=courses, many=True, context={"request": request}
+        )
         return Response(data=course_serializer.data, status=status.HTTP_200_OK)
 
 
@@ -483,7 +544,7 @@ class StudentContentView(APIView):
                 name="slug",
                 type=OpenApiTypes.STR,
                 location=OpenApiParameter.PATH,
-                description="Unique slug identifier of the content"
+                description="Unique slug identifier of the content",
             ),
         ],
         responses={
@@ -491,10 +552,100 @@ class StudentContentView(APIView):
             status.HTTP_404_NOT_FOUND: OpenApiResponse(description="Content not found"),
             status.HTTP_403_FORBIDDEN: OpenApiResponse(description="Not authorized"),
         },
-        tags=["Student Endpoints"]
+        tags=["Student Endpoints"],
     )
     def get(self, request, slug=None):
-        print(slug)
         content = get_object_or_404(Content, slug=slug)
         content_serializer = ContentSerializer(instance=content)
         return Response(data=content_serializer.data, status=status.HTTP_200_OK)
+
+
+class CourseProgressView(APIView):
+    permission_classes = [IsAuthenticated, IsStudent]
+
+    @extend_schema(
+        summary="Get course progress",
+        description="Get progress information for a specific course",
+        parameters=[
+            OpenApiParameter(
+                name="slug",
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.PATH,
+                description="Unique slug identifier of the course",
+            ),
+        ],
+        responses={
+            status.HTTP_200_OK: CourseProgressSerializer,
+            status.HTTP_404_NOT_FOUND: OpenApiResponse(description="Course not found"),
+        },
+        tags=["Progress"],
+    )
+    def get(self, request, slug):
+        course = get_object_or_404(Course, slug=slug)
+        progress, created = CourseProgress.objects.get_or_create(
+            student=request.user, course=course
+        )
+        serializer = CourseProgressSerializer(progress)
+        return Response(serializer.data)
+
+
+class ContentProgressView(APIView):
+    permission_classes = [IsAuthenticated, IsStudent]
+
+    @extend_schema(
+        summary="Get content progress",
+        description="Get progress information for specific content",
+        parameters=[
+            OpenApiParameter(
+                name="slug",
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.PATH,
+                description="Unique slug identifier of the content",
+            ),
+        ],
+        responses={
+            status.HTTP_200_OK: ContentProgressSerializer,
+            status.HTTP_404_NOT_FOUND: OpenApiResponse(description="Content not found"),
+        },
+        tags=["Progress"],
+    )
+    def get(self, request, slug):
+        content = get_object_or_404(Content, slug=slug)
+        progress, created = ContentProgress.objects.get_or_create(
+            student=request.user, content=content
+        )
+        serializer = ContentProgressSerializer(progress)
+        return Response(serializer.data)
+
+    @extend_schema(
+        summary="Update content progress",
+        description="Update progress for specific content",
+        parameters=[
+            OpenApiParameter(
+                name="slug",
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.PATH,
+                description="Unique slug identifier of the content",
+            ),
+        ],
+        request=ContentProgressSerializer,
+        responses={
+            status.HTTP_200_OK: ContentProgressSerializer,
+            status.HTTP_404_NOT_FOUND: OpenApiResponse(description="Content not found"),
+        },
+        tags=["Progress"],
+    )
+    def post(self, request, slug):
+        content = get_object_or_404(Content, slug=slug)
+        progress, created = ContentProgress.objects.get_or_create(
+            student=request.user, content=content
+        )
+
+        if request.data.get("completed"):
+            progress.mark_as_completed()
+        elif "last_position" in request.data:
+            progress.last_position = request.data["last_position"]
+            progress.save()
+
+        serializer = ContentProgressSerializer(progress)
+        return Response(serializer.data)

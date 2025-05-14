@@ -1,33 +1,44 @@
 from rest_framework import serializers
-from courses.models import Subject, Content, Module, Course, VideoContent, TextContent, FileContent, ImageContent
+from courses.models import (
+    Subject,
+    Content,
+    Module,
+    Course,
+    VideoContent,
+    TextContent,
+    FileContent,
+    ImageContent,
+    ContentProgress,
+    CourseProgress,
+)
 from rest_polymorphic.serializers import PolymorphicSerializer
 
 
 class VideoContentSerializer(serializers.ModelSerializer):
     class Meta:
         model = VideoContent
-        fields = '__all__'
+        fields = "__all__"
         extra_kwargs = {"module": {"read_only": True}}
 
 
 class ImageContentSerializer(serializers.ModelSerializer):
     class Meta:
         model = ImageContent
-        fields = '__all__'
+        fields = "__all__"
         extra_kwargs = {"module": {"read_only": True}}
 
 
 class FileContentSerializer(serializers.ModelSerializer):
     class Meta:
         model = FileContent
-        fields = '__all__'
+        fields = "__all__"
         extra_kwargs = {"module": {"read_only": True}}
 
 
 class TextContentSerializer(serializers.ModelSerializer):
     class Meta:
         model = TextContent
-        fields = '__all__'
+        fields = "__all__"
         extra_kwargs = {"module": {"read_only": True}}
 
 
@@ -41,14 +52,14 @@ class ContentSerializer(PolymorphicSerializer):
 
 
 class ModuleSerializer(serializers.ModelSerializer):
-    contents = serializers.HyperlinkedRelatedField(many=True, read_only=True, view_name="content-detail",
-                                                   lookup_field="slug")
+    contents = serializers.HyperlinkedRelatedField(
+        many=True, read_only=True, view_name="content-detail", lookup_field="slug"
+    )
 
     class Meta:
         model = Module
         fields = ["order", "slug", "title", "description", "contents"]
-        extra_kwargs = {'order': {'read_only': True},
-                        'slug': {'read_only': True}}
+        extra_kwargs = {"order": {"read_only": True}, "slug": {"read_only": True}}
 
 
 class CourseSerializer(serializers.ModelSerializer):
@@ -77,3 +88,32 @@ class SubjectSerializer(serializers.ModelSerializer):
     class Meta:
         model = Subject
         fields = "__all__"
+
+
+class ContentProgressSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ContentProgress
+        fields = ["id", "content", "completed", "completed_at", "last_position"]
+        read_only_fields = ["completed_at"]
+
+
+class CourseProgressSerializer(serializers.ModelSerializer):
+    progress_percentage = serializers.FloatField(read_only=True)
+
+    class Meta:
+        model = CourseProgress
+        fields = [
+            "id",
+            "course",
+            "started_at",
+            "last_accessed",
+            "completed",
+            "completed_at",
+            "progress_percentage",
+        ]
+        read_only_fields = [
+            "started_at",
+            "last_accessed",
+            "completed_at",
+            "progress_percentage",
+        ]
