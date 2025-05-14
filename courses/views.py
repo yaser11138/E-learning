@@ -6,6 +6,7 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework import status
 from drf_spectacular.utils import (
     extend_schema,
+    extend_schema_view,
     OpenApiParameter,
     OpenApiExample,
     OpenApiResponse,
@@ -23,6 +24,14 @@ from core.permissions import IsInstructor, IsOwner, IsStudent
 from .models import Course, Module, Content, CourseProgress, ContentProgress
 
 
+@extend_schema_view(
+    list=extend_schema(tags=["courses"]),
+    create=extend_schema(tags=["courses"]),
+    retrieve=extend_schema(tags=["courses"]),
+    update=extend_schema(tags=["courses"]),
+    partial_update=extend_schema(tags=["courses"]),
+    destroy=extend_schema(tags=["courses"]),
+)
 class CourseViewSet(ModelViewSet):
     queryset = Course.objects.all()
     serializer_class = CourseSerializer
@@ -35,9 +44,8 @@ class CourseViewSet(ModelViewSet):
         description="Creates a new course with the provided data, including file uploads",
         request={"multipart/form-data": CourseSerializer},
         responses={201: CourseSerializer, 400: OpenApiTypes.OBJECT},
-        tags=["course"],
     )
-    def create(self, request, *args, **kwargs):  # Handles POST
+    def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
             serializer.save(owner=request.user)
@@ -49,7 +57,6 @@ class CourseViewSet(ModelViewSet):
         description="Updates the course with the given slug",
         request=CourseSerializer,
         responses={200: CourseSerializer, 400: OpenApiTypes.OBJECT},
-        tags=["course"],
     )
     def update(self, request, *args, **kwargs):
         return super().update(request, *args, **kwargs)
@@ -59,7 +66,6 @@ class CourseViewSet(ModelViewSet):
         description="Updates the course with the given slug",
         request=CourseSerializer,
         responses={200: CourseSerializer, 400: OpenApiTypes.OBJECT},
-        tags=["course"],
     )
     def partial_update(self, request, *args, **kwargs):
         return super().partial_update(request, *args, **kwargs)
@@ -68,9 +74,8 @@ class CourseViewSet(ModelViewSet):
         summary="Delete a course",
         description="Deletes the course with the given slug",
         responses={200: OpenApiTypes.OBJECT, 404: OpenApiTypes.OBJECT},
-        tags=["course"],
     )
-    def destroy(self, request, *args, **kwargs):  # Handles DELETE
+    def destroy(self, request, *args, **kwargs):
         course = self.get_object()
         title = course.title
         self.perform_destroy(course)
@@ -79,6 +84,9 @@ class CourseViewSet(ModelViewSet):
         )
 
 
+@extend_schema_view(
+    get=extend_schema(tags=["courses"]),
+)
 class ModuleListView(APIView):
     serializer_class = ModuleSerializer
     permission_classes = [IsAuthenticated, IsInstructor, IsOwner]
@@ -99,7 +107,6 @@ class ModuleListView(APIView):
             200: ModuleSerializer(many=True),
             404: {"description": "Course not found"},
         },
-        tags=["module"],
     )
     def get(self, request, slug: str = None):
         course = get_object_or_404(Course, slug=slug)
@@ -108,6 +115,9 @@ class ModuleListView(APIView):
         return Response(data=course_modules_serializer.data, status=status.HTTP_200_OK)
 
 
+@extend_schema_view(
+    post=extend_schema(tags=["courses"]),
+)
 class ModuleCreateView(APIView):
     serializer_class = ModuleSerializer
     permission_classes = [IsAuthenticated, IsInstructor]
@@ -130,7 +140,6 @@ class ModuleCreateView(APIView):
             400: {"description": "Invalid input data"},
             404: {"description": "Course not found"},
         },
-        tags=["module"],
     )
     def post(self, request, slug: str):
         course = get_object_or_404(Course, slug=slug)
@@ -142,6 +151,11 @@ class ModuleCreateView(APIView):
             return Response(data=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+@extend_schema_view(
+    retrieve=extend_schema(tags=["courses"]),
+    update=extend_schema(tags=["courses"]),
+    destroy=extend_schema(tags=["courses"]),
+)
 class ModuleViewSet(ViewSet):
     serializer_class = ModuleSerializer
     permission_classes = [IsAuthenticated, IsInstructor, IsOwner]
@@ -160,7 +174,6 @@ class ModuleViewSet(ViewSet):
             )
         ],
         responses={200: ModuleSerializer, 404: {"description": "Module not found"}},
-        tags=["module"],
     )
     def retrieve(self, request, slug: str = None):
         module = get_object_or_404(Module, slug=slug)
@@ -186,7 +199,6 @@ class ModuleViewSet(ViewSet):
             403: {"description": "Permission denied"},
             404: {"description": "Module not found"},
         },
-        tags=["module"],
     )
     def update(self, request, slug: str = None):
         module = get_object_or_404(Module, slug=slug)
@@ -219,7 +231,6 @@ class ModuleViewSet(ViewSet):
             403: {"description": "Permission denied"},
             404: {"description": "Module not found"},
         },
-        tags=["module"],
     )
     def destroy(self, request, slug: str = None):
         module = get_object_or_404(Module, slug=slug)
@@ -228,6 +239,10 @@ class ModuleViewSet(ViewSet):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
+@extend_schema_view(
+    get=extend_schema(tags=["content"]),
+    post=extend_schema(tags=["content"]),
+)
 class ContentViewListCreate(APIView):
     permission_classes = [IsAuthenticated, IsOwner, IsInstructor]
     parser_classes = (MultiPartParser, FormParser)
@@ -248,7 +263,6 @@ class ContentViewListCreate(APIView):
                 type=str,
             )
         ],
-        tags=["contents"],
     )
     def get(self, request, module_slug):
         module = get_object_or_404(Module, slug=module_slug)
@@ -260,41 +274,38 @@ class ContentViewListCreate(APIView):
         summary="Create module content",
         description="Create a new content item for a specific module. Use multipart/form-data for file uploads.",
         request={
-            'multipart/form-data': {
-                'type': 'object',
-                'properties': {
-                    'title': {
-                        'type': 'string',
-                        'description': 'Title of the content'
+            "multipart/form-data": {
+                "type": "object",
+                "properties": {
+                    "title": {"type": "string", "description": "Title of the content"},
+                    "is_free": {
+                        "type": "boolean",
+                        "description": "Whether the content is free to access",
                     },
-                    'is_free': {
-                        'type': 'boolean',
-                        'description': 'Whether the content is free to access'
+                    "resource_type": {
+                        "type": "string",
+                        "description": "Type of resource",
+                        "enum": ["text", "video", "image", "file"],
                     },
-                    'resource_type': {
-                        'type': 'string',
-                        'description': 'Type of resource',
-                        'enum': ['text', 'video', 'image', 'file']
+                    "text": {
+                        "type": "string",
+                        "description": "Text content if resource_type is text",
                     },
-                    'text': {
-                        'type': 'string',
-                        'description': 'Text content if resource_type is text'
+                    "video_file": {
+                        "type": "string",
+                        "format": "binary",
+                        "description": "Video file if resource_type is video",
                     },
-                    'video_file': {
-                        'type': 'string',
-                        'format': 'binary',
-                        'description': 'Video file if resource_type is video'
+                    "image": {
+                        "type": "string",
+                        "format": "binary",
+                        "description": "Image file if resource_type is image",
                     },
-                    'image': {
-                        'type': 'string',
-                        'format': 'binary',
-                        'description': 'Image file if resource_type is image'
+                    "file": {
+                        "type": "string",
+                        "format": "binary",
+                        "description": "Document file if resource_type is file",
                     },
-                    'file': {
-                        'type': 'string',
-                        'format': 'binary',
-                        'description': 'Document file if resource_type is file'
-                    }
                 },
                 "required": ["title", "resource_type"],
             }
@@ -313,33 +324,6 @@ class ContentViewListCreate(APIView):
                 type=str,
             )
         ],
-        examples=[
-            OpenApiExample(
-                "Text Content Example",
-                summary="Example request for text content",
-                value={
-                    "title": "Introduction to Python",
-                    "description": "Basic Python concepts",
-                    "content_type": "text",
-                    "text_content": "Python is a high-level programming language...",
-                    "order": 1,
-                },
-                request_only=True,
-            ),
-            OpenApiExample(
-                "File Upload Example",
-                summary="Example request for file upload",
-                value={
-                    "title": "Python Tutorial PDF",
-                    "description": "Comprehensive Python guide",
-                    "content_type": "file",
-                    "order": 2,
-                    # file field would be submitted as actual file
-                },
-                request_only=True,
-            ),
-        ],
-        tags=["contents"],
     )
     def post(self, request, module_slug):
         module = get_object_or_404(Module, slug=module_slug)
@@ -351,9 +335,12 @@ class ContentViewListCreate(APIView):
             return Response(data=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+@extend_schema_view(
+    retrieve=extend_schema(tags=["content"]),
+    partial_update=extend_schema(tags=["content"]),
+    destroy=extend_schema(tags=["content"]),
+)
 class ContentDetailView(ViewSet):
-    """ViewSet for content details operations"""
-
     parser_classes = [MultiPartParser, FormParser]
     serializer_class = ContentSerializer
     lookup_field = "slug"
@@ -375,7 +362,6 @@ class ContentDetailView(ViewSet):
             200: ContentSerializer,
             404: {"type": "object", "properties": {"detail": {"type": "string"}}},
         },
-        tags=["contents"],
     )
     def retrieve(self, request, slug=None):
         content = get_object_or_404(Content, slug=slug)
@@ -396,50 +382,52 @@ class ContentDetailView(ViewSet):
             )
         ],
         request={
-            'multipart/form-data': {
-                'type': 'object',
-                'properties': {
-                    'title': {
-                        'type': 'string',
-                        'description': 'Title of the content'
+            "multipart/form-data": {
+                "type": "object",
+                "properties": {
+                    "title": {"type": "string", "description": "Title of the content"},
+                    "description": {
+                        "type": "string",
+                        "description": "Description of the content",
                     },
-                    'description': {
-                        'type': 'string',
-                        'description': 'Description of the content'
+                    "is_free": {
+                        "type": "boolean",
+                        "description": "Whether the content is free to access",
                     },
-                    'is_free': {
-                        'type': 'boolean',
-                        'description': 'Whether the content is free to access'
+                    "resourcetype": {
+                        "type": "string",
+                        "description": "Type of resource",
+                        "enum": [
+                            "TextContent",
+                            "VideoContent",
+                            "ImageContent",
+                            "FileContent",
+                        ],
                     },
-                    'resourcetype': {
-                        'type': 'string',
-                        'description': 'Type of resource',
-                        'enum': ['TextContent', 'VideoContent', 'ImageContent', 'FileContent']
+                    "text": {
+                        "type": "string",
+                        "description": "Text content if resourcetype is text",
                     },
-                    'text': {
-                        'type': 'string',
-                        'description': 'Text content if resourcetype is text'
+                    "video_file": {
+                        "type": "string",
+                        "format": "binary",
+                        "description": "Video file if resourcetype is video",
                     },
-                    'video_file': {
-                        'type': 'string',
-                        'format': 'binary',
-                        'description': 'Video file if resourcetype is video'
+                    "image": {
+                        "type": "string",
+                        "format": "binary",
+                        "description": "Image file if resourcetype is image",
                     },
-                    'image': {
-                        'type': 'string',
-                        'format': 'binary',
-                        'description': 'Image file if resourcetype is image'
+                    "file": {
+                        "type": "string",
+                        "format": "binary",
+                        "description": "Document file if resourcetype is file",
                     },
-                    'file': {
-                        'type': 'string',
-                        'format': 'binary',
-                        'description': 'Document file if resourcetype is file'
+                    "order": {
+                        "type": "integer",
+                        "description": "Order position of the content",
                     },
-                    'order': {
-                        'type': 'integer',
-                        'description': 'Order position of the content'
-                    }
-                }
+                },
             }
         },
         responses={
@@ -448,7 +436,6 @@ class ContentDetailView(ViewSet):
             403: {"type": "object", "properties": {"detail": {"type": "string"}}},
             404: {"type": "object", "properties": {"detail": {"type": "string"}}},
         },
-        tags=["contents"],
     )
     def partial_update(self, request, slug=None):
         content = get_object_or_404(Content, slug=slug)
@@ -478,7 +465,6 @@ class ContentDetailView(ViewSet):
             403: {"type": "object", "properties": {"detail": {"type": "string"}}},
             404: {"type": "object", "properties": {"detail": {"type": "string"}}},
         },
-        tags=["contents"],
     )
     def destroy(self, request, slug=None):
         content = get_object_or_404(Content, slug=slug)
@@ -487,6 +473,10 @@ class ContentDetailView(ViewSet):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
+@extend_schema_view(
+    retrieve=extend_schema(tags=["courses"]),
+    list=extend_schema(tags=["courses"]),
+)
 class StudentCourseView(ViewSet):
     permission_classes = [IsAuthenticated, IsStudent]
     lookup_field = "slug"
@@ -507,7 +497,6 @@ class StudentCourseView(ViewSet):
             status.HTTP_404_NOT_FOUND: OpenApiResponse(description="Course not found"),
             status.HTTP_403_FORBIDDEN: OpenApiResponse(description="Not authorized"),
         },
-        tags=["Student Endpoints"],
     )
     def retrieve(self, request, slug):
         course = get_object_or_404(Course, slug=slug)
@@ -523,7 +512,6 @@ class StudentCourseView(ViewSet):
             status.HTTP_200_OK: CourseSerializer(many=True),
             status.HTTP_403_FORBIDDEN: OpenApiResponse(description="Not authorized"),
         },
-        tags=["Student Endpoints"],
     )
     def list(self, request):
         courses = Course.objects.all()
@@ -533,6 +521,9 @@ class StudentCourseView(ViewSet):
         return Response(data=course_serializer.data, status=status.HTTP_200_OK)
 
 
+@extend_schema_view(
+    get=extend_schema(tags=["content"]),
+)
 class StudentContentView(APIView):
     permission_classes = [IsAuthenticated, IsStudent]
 
@@ -552,7 +543,6 @@ class StudentContentView(APIView):
             status.HTTP_404_NOT_FOUND: OpenApiResponse(description="Content not found"),
             status.HTTP_403_FORBIDDEN: OpenApiResponse(description="Not authorized"),
         },
-        tags=["Student Endpoints"],
     )
     def get(self, request, slug=None):
         content = get_object_or_404(Content, slug=slug)
@@ -560,6 +550,9 @@ class StudentContentView(APIView):
         return Response(data=content_serializer.data, status=status.HTTP_200_OK)
 
 
+@extend_schema_view(
+    get=extend_schema(tags=["progress"]),
+)
 class CourseProgressView(APIView):
     permission_classes = [IsAuthenticated, IsStudent]
 
@@ -578,7 +571,6 @@ class CourseProgressView(APIView):
             status.HTTP_200_OK: CourseProgressSerializer,
             status.HTTP_404_NOT_FOUND: OpenApiResponse(description="Course not found"),
         },
-        tags=["Progress"],
     )
     def get(self, request, slug):
         course = get_object_or_404(Course, slug=slug)
@@ -589,6 +581,10 @@ class CourseProgressView(APIView):
         return Response(serializer.data)
 
 
+@extend_schema_view(
+    get=extend_schema(tags=["progress"]),
+    post=extend_schema(tags=["progress"]),
+)
 class ContentProgressView(APIView):
     permission_classes = [IsAuthenticated, IsStudent]
 
@@ -607,7 +603,6 @@ class ContentProgressView(APIView):
             status.HTTP_200_OK: ContentProgressSerializer,
             status.HTTP_404_NOT_FOUND: OpenApiResponse(description="Content not found"),
         },
-        tags=["Progress"],
     )
     def get(self, request, slug):
         content = get_object_or_404(Content, slug=slug)
@@ -633,7 +628,6 @@ class ContentProgressView(APIView):
             status.HTTP_200_OK: ContentProgressSerializer,
             status.HTTP_404_NOT_FOUND: OpenApiResponse(description="Content not found"),
         },
-        tags=["Progress"],
     )
     def post(self, request, slug):
         content = get_object_or_404(Content, slug=slug)
