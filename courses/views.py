@@ -19,9 +19,18 @@ from .serializers import (
     ContentSerializer,
     CourseProgressSerializer,
     ContentProgressSerializer,
+    CourseMediaSerializer,
 )
 from core.permissions import IsInstructor, IsOwner, IsStudent
-from .models import Course, Module, Content, CourseProgress, ContentProgress
+from .models import (
+    Course,
+    Module,
+    Content,
+    CourseProgress,
+    ContentProgress,
+    CourseMedia,
+)
+from .utils import validate_file, upload_file_to_cloudinary, delete_file_from_cloudinary
 
 
 @extend_schema_view(
@@ -239,6 +248,14 @@ class ModuleViewSet(ViewSet):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
+# Resource type to file field mapping
+RESOURCE_TYPE_MAPPING = {
+    "VideoContent": "video_file",
+    "ImageContent": "image_file",
+    "FileContent": "file",
+    "TextContent": None,
+}
+
 @extend_schema_view(
     get=extend_schema(tags=["content"]),
     post=extend_schema(tags=["content"]),
@@ -246,6 +263,8 @@ class ModuleViewSet(ViewSet):
 class ContentViewListCreate(APIView):
     permission_classes = [IsAuthenticated, IsOwner, IsInstructor]
     parser_classes = (MultiPartParser, FormParser)
+
+
 
     @extend_schema(
         summary="List module contents",
@@ -282,32 +301,37 @@ class ContentViewListCreate(APIView):
                         "type": "boolean",
                         "description": "Whether the content is free to access",
                     },
-                    "resource_type": {
+                    "resourcetype": {
                         "type": "string",
                         "description": "Type of resource",
-                        "enum": ["text", "video", "image", "file"],
+                        "enum": [
+                            "TextContent",
+                            "VideoContent",
+                            "ImageContent",
+                            "FileContent",
+                        ],
                     },
                     "text": {
                         "type": "string",
-                        "description": "Text content if resource_type is text",
+                        "description": "Text content if resourcetype is text",
                     },
                     "video_file": {
                         "type": "string",
                         "format": "binary",
-                        "description": "Video file if resource_type is video",
+                        "description": "Video file if resourcetype is video",
                     },
-                    "image": {
+                    "image_file": {
                         "type": "string",
                         "format": "binary",
-                        "description": "Image file if resource_type is image",
+                        "description": "Image file if resourcetype is image",
                     },
                     "file": {
                         "type": "string",
                         "format": "binary",
-                        "description": "Document file if resource_type is file",
+                        "description": "Document file if resourcetype is file",
                     },
                 },
-                "required": ["title", "resource_type"],
+                "required": ["title", "resourcetype"],
             }
         },
         responses={
@@ -327,12 +351,50 @@ class ContentViewListCreate(APIView):
     )
     def post(self, request, module_slug):
         module = get_object_or_404(Module, slug=module_slug)
+        resource_type = request.data.get("resourcetype")
+
+        # Check if it's a file-based content
+        if resource_type in RESOURCE_TYPE_MAPPING:
+            file_field = RESOURCE_TYPE_MAPPING[resource_type]
+
+            if file_field:  # Skip for TextContent
+                file = request.FILES.get(file_field)
+                if not file:
+                    return Response(
+                        {"error": f"{file_field} is required"},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+
+                # Validate file
+                is_valid, error_message = validate_file(file)
+                if not is_valid:
+                    return Response(
+                        {"error": error_message}, status=status.HTTP_400_BAD_REQUEST
+                    )
+
+                # Upload to Cloudinary
+                upload_result = upload_file_to_cloudinary(file)
+                if not upload_result:
+                    return Response(
+                        {"error": "Failed to upload file"},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+
+                # Add Cloudinary data to request data
+                request.data[file_field] = upload_result["url"]
+                request.data["public_id"] = upload_result["public_id"]
+
+                # Add specific fields based on content type
+                if resource_type == "VideoContent":
+                    request.data["thumbnail_url"] = upload_result.get("thumbnail_url")
+                elif resource_type == "FileContent":
+                    request.data["file_size"] = file.size
+
         serializer = ContentSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save(module=module)
-            return Response(data=serializer.data, status=status.HTTP_200_OK)
-        else:
-            return Response(data=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return Response(data=serializer.data, status=status.HTTP_201_CREATED)
+        return Response(data=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 @extend_schema_view(
@@ -440,6 +502,39 @@ class ContentDetailView(ViewSet):
     def partial_update(self, request, slug=None):
         content = get_object_or_404(Content, slug=slug)
         self.check_object_permissions(request, content.module.course)
+
+        # Handle file updates if a new file is provided
+        if content.resourcetype in ("VideoContent" , "ImageContent", "FileContent"):
+            file_field = RESOURCE_TYPE_MAPPING[content.resourcetype]
+            file = request.FILES.get(file_field)
+
+            if file:
+                # Validate file
+                is_valid, error_message = validate_file(file)
+                if not is_valid:
+                    return Response(
+                        {"error": error_message}, status=status.HTTP_400_BAD_REQUEST
+                    )
+
+                # Delete old file from Cloudinary
+                delete_file_from_cloudinary(content.public_id)
+
+                # Upload new file to Cloudinary
+                upload_result = upload_file_to_cloudinary(file)
+                if not upload_result:
+                    return Response(
+                        {"error": "Failed to upload file"},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+
+                # Add Cloudinary data to request data
+                request.data[file_field] = upload_result["url"]
+                request.data["public_id"] = upload_result["public_id"]
+                if content.resourcetype == "VideoContent":
+                    request.data["thumbnail_url"] = upload_result.get("thumbnail_url")
+                elif content.resourcetype == "FileContent":
+                    request.data["file_size"] = file.size
+
         serializer = ContentSerializer(
             data=request.data, instance=content, partial=True
         )
@@ -643,3 +738,39 @@ class ContentProgressView(APIView):
 
         serializer = ContentProgressSerializer(progress)
         return Response(serializer.data)
+
+
+class CourseMediaViewSet(ModelViewSet):
+    """ViewSet for handling course media files."""
+
+    serializer_class = CourseMediaSerializer
+    permission_classes = [IsAuthenticated, IsInstructor, IsOwner]
+
+    def get_queryset(self):
+        return CourseMedia.objects.filter(course_id=self.kwargs["course_pk"])
+
+    def perform_create(self, serializer):
+        course = get_object_or_404(Course, id=self.kwargs["course_pk"])
+        file = self.request.FILES.get("file")
+
+        # Validate file
+        is_valid, error_message = validate_file(file)
+        if not is_valid:
+            raise self.serializer_class.ValidationError(error_message)
+
+        # Upload to Cloudinary
+        upload_result = upload_file_to_cloudinary(file)
+        if not upload_result:
+            raise self.serializer_class.ValidationError("Failed to upload file")
+
+        # Create media object
+        serializer.save(
+            course=course,
+            file_url=upload_result["url"],
+            public_id=upload_result["public_id"],
+            size=file.size,
+        )
+
+    def perform_destroy(self, instance):
+        # The delete method in the model will handle Cloudinary deletion
+        instance.delete()

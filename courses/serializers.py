@@ -10,6 +10,7 @@ from courses.models import (
     ImageContent,
     ContentProgress,
     CourseProgress,
+    CourseMedia,
 )
 from rest_polymorphic.serializers import PolymorphicSerializer
 
@@ -117,3 +118,35 @@ class CourseProgressSerializer(serializers.ModelSerializer):
             "completed_at",
             "progress_percentage",
         ]
+
+
+class CourseMediaSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CourseMedia
+        fields = [
+            "id",
+            "title",
+            "description",
+            "media_type",
+            "file_url",
+            "thumbnail_url",
+            "duration",
+            "size",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = [
+            "file_url",
+            "thumbnail_url",
+            "duration",
+            "size",
+            "created_at",
+            "updated_at",
+        ]
+
+
+class CourseMediaUploadSerializer(serializers.Serializer):
+    file = serializers.FileField()
+    title = serializers.CharField(max_length=255)
+    description = serializers.CharField(required=False, allow_blank=True)
+    media_type = serializers.ChoiceField(choices=CourseMedia.MEDIA_TYPES)

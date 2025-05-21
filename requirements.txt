@@ -4,18 +4,44 @@
 #
 #    pip-compile
 #
+amqp==5.3.1
+    # via kombu
 asgiref==3.8.1
     # via django
 attrs==25.3.0
     # via
     #   jsonschema
     #   referencing
+billiard==4.2.1
+    # via celery
+celery==5.3.6
+    # via -r requirements.in
 certifi==2025.1.31
-    # via requests
+    # via
+    #   cloudinary
+    #   requests
 cffi==1.17.1
     # via cryptography
 charset-normalizer==3.4.1
     # via requests
+click==8.2.0
+    # via
+    #   celery
+    #   click-didyoumean
+    #   click-plugins
+    #   click-repl
+click-didyoumean==0.3.1
+    # via celery
+click-plugins==1.1.1
+    # via celery
+click-repl==0.3.0
+    # via celery
+cloudinary==1.37.0
+    # via
+    #   -r requirements.in
+    #   django-cloudinary-storage
+colorama==0.4.6
+    # via click
 cryptography==44.0.2
     # via pyjwt
 defusedxml==0.7.1
@@ -28,6 +54,7 @@ django==4.2.5
     #   dj-rest-auth
     #   django-allauth
     #   django-polymorphic
+    #   django-redis
     #   django-rest-polymorphic
     #   djangorestframework
     #   djangorestframework-simplejwt
@@ -35,12 +62,16 @@ django==4.2.5
     #   drf-spectacular-sidecar
 django-allauth==0.52.0
     # via -r requirements.in
+django-cloudinary-storage==0.3.0
+    # via -r requirements.in
 django-environ==0.12.0
     # via -r requirements.in
 django-polymorphic==3.1.0
     # via
     #   -r requirements.in
     #   django-rest-polymorphic
+django-redis==5.4.0
+    # via -r requirements.in
 django-rest-polymorphic==0.1.10
     # via -r requirements.in
 djangorestframework==3.15.1
@@ -64,10 +95,14 @@ jsonschema==4.23.0
     # via drf-spectacular
 jsonschema-specifications==2024.10.1
     # via jsonschema
+kombu==5.5.3
+    # via celery
 oauthlib==3.2.2
     # via requests-oauthlib
 pillow==10.3.0
     # via -r requirements.in
+prompt-toolkit==3.0.51
+    # via click-repl
 psycopg2==2.9.9
     # via -r requirements.in
 pycparser==2.22
@@ -76,10 +111,16 @@ pyjwt[crypto]==2.10.1
     # via
     #   django-allauth
     #   djangorestframework-simplejwt
+python-dateutil==2.9.0.post0
+    # via celery
 python3-openid==3.2.0
     # via django-allauth
 pyyaml==6.0.2
     # via drf-spectacular
+redis==5.0.1
+    # via
+    #   -r requirements.in
+    #   django-redis
 referencing==0.36.2
     # via
     #   jsonschema
@@ -87,6 +128,7 @@ referencing==0.36.2
 requests==2.32.3
     # via
     #   django-allauth
+    #   django-cloudinary-storage
     #   requests-oauthlib
 requests-oauthlib==2.0.0
     # via django-allauth
@@ -95,14 +137,29 @@ rpds-py==0.24.0
     #   jsonschema
     #   referencing
 six==1.17.0
-    # via django-rest-polymorphic
+    # via
+    #   cloudinary
+    #   django-rest-polymorphic
+    #   python-dateutil
 sqlparse==0.5.3
     # via django
 typing-extensions==4.13.0
     # via referencing
 tzdata==2025.2
-    # via django
+    # via
+    #   celery
+    #   django
+    #   kombu
 uritemplate==4.1.1
     # via drf-spectacular
 urllib3==2.3.0
-    # via requests
+    # via
+    #   cloudinary
+    #   requests
+vine==5.1.0
+    # via
+    #   amqp
+    #   celery
+    #   kombu
+wcwidth==0.2.13
+    # via prompt-toolkit

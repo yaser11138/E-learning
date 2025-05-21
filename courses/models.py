@@ -81,11 +81,30 @@ class Content(PolymorphicModel):
 
 
 class VideoContent(Content):
-    video_file = models.FileField(upload_to="videos/")
+    video_file = models.URLField()  # Store Cloudinary URL
+    public_id = models.CharField(max_length=255)  # Store Cloudinary public_id
+    duration = models.DurationField(null=True, blank=True)
+    thumbnail_url = models.URLField(blank=True, null=True)
+
+    def delete(self, *args, **kwargs):
+        """Delete the video from Cloudinary when the model instance is deleted."""
+        from .utils import delete_file_from_cloudinary
+
+        delete_file_from_cloudinary(self.public_id)
+        super().delete(*args, **kwargs)
 
 
 class ImageContent(Content):
-    image_file = models.ImageField(upload_to="images/")
+    image_file = models.URLField()  # Store Cloudinary URL
+    public_id = models.CharField(max_length=255)  # Store Cloudinary public_id
+    thumbnail_url = models.URLField(blank=True, null=True)
+
+    def delete(self, *args, **kwargs):
+        """Delete the image from Cloudinary when the model instance is deleted."""
+        from .utils import delete_file_from_cloudinary
+
+        delete_file_from_cloudinary(self.public_id)
+        super().delete(*args, **kwargs)
 
 
 class TextContent(Content):
@@ -93,7 +112,16 @@ class TextContent(Content):
 
 
 class FileContent(Content):
-    file = models.FileField(upload_to="files/")
+    file = models.URLField()  # Store Cloudinary URL
+    public_id = models.CharField(max_length=255)  # Store Cloudinary public_id
+    file_size = models.PositiveIntegerField()  # Store file size in bytes
+
+    def delete(self, *args, **kwargs):
+        """Delete the file from Cloudinary when the model instance is deleted."""
+        from .utils import delete_file_from_cloudinary
+
+        delete_file_from_cloudinary(self.public_id)
+        super().delete(*args, **kwargs)
 
 
 class CourseProgress(models.Model):
@@ -180,3 +208,39 @@ class ContentProgress(models.Model):
                 course_progress.completed = True
                 course_progress.completed_at = timezone.now()
                 course_progress.save()
+
+
+class CourseMedia(models.Model):
+    """Model for storing course media files (videos and images)."""
+
+    MEDIA_TYPES = (
+        ("video", "Video"),
+        ("image", "Image"),
+    )
+
+    course = models.ForeignKey(
+        "Course", on_delete=models.CASCADE, related_name="media_files"
+    )
+    title = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    media_type = models.CharField(max_length=10, choices=MEDIA_TYPES)
+    file_url = models.URLField()
+    public_id = models.CharField(max_length=255)  # Cloudinary public_id
+    thumbnail_url = models.URLField(blank=True, null=True)
+    duration = models.DurationField(null=True, blank=True)  # For videos
+    size = models.PositiveIntegerField()  # File size in bytes
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.title} ({self.get_media_type_display()})"
+
+    def delete(self, *args, **kwargs):
+        """Delete the file from Cloudinary when the model instance is deleted."""
+        from .utils import delete_file_from_cloudinary
+
+        delete_file_from_cloudinary(self.public_id)
+        super().delete(*args, **kwargs)

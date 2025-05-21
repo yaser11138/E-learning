@@ -10,3 +10,9 @@ django-polymorphic
 django-rest-polymorphic
 drf_spectacular
 drf-spectacular[sidecar]
+redis==5.0.1
+celery==5.3.6
+django-redis==5.4.0
+django-cloudinary-storage==0.3.0
+cloudinary==1.37.0
+django-cors-headers==4.3.1
