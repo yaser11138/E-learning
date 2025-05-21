@@ -14,6 +14,7 @@ A modern, feature-rich e-learning platform built with Django and Django REST Fra
   - File attachments
 - Set course pricing (free or paid)
 - Track student progress and engagement
+- Cloud-based media storage with Cloudinary
 
 ### For Students
 - Browse available courses
@@ -22,13 +23,15 @@ A modern, feature-rich e-learning platform built with Django and Django REST Fra
 - Video progress tracking (resume from last position)
 - Course completion tracking
 - Progress percentage calculation
+- Modern and responsive user interface
 
 ## Technical Stack
 
 - **Backend Framework**: Django & Django REST Framework
+- **Frontend**: HTML, CSS, JavaScript with modern UI components
 - **Database**: PostgreSQL (recommended)
 - **Authentication**: Django's built-in authentication system
-- **File Storage**: Django's FileSystemStorage (configurable)
+- **Media Storage**: Cloudinary for cloud-based media storage
 - **API Documentation**: DRF Spectacular
 
 ## Prerequisites
@@ -37,6 +40,7 @@ A modern, feature-rich e-learning platform built with Django and Django REST Fra
 - pip (Python package manager)
 - Virtual environment (recommended)
 - PostgreSQL (recommended) or SQLite
+- Cloudinary account (for media storage)
 
 ## Installation
 
@@ -57,19 +61,28 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-4. Configure your database settings in `settings.py`
+4. Configure your environment variables:
+   - Create a `.env` file in the project root
+   - Add your Cloudinary credentials:
+     ```
+     CLOUDINARY_CLOUD_NAME=your_cloud_name
+     CLOUDINARY_API_KEY=your_api_key
+     CLOUDINARY_API_SECRET=your_api_secret
+     ```
 
-5. Run migrations:
+5. Configure your database settings in `settings.py`
+
+6. Run migrations:
 ```bash
 python manage.py migrate
 ```
 
-6. Create a superuser:
+7. Create a superuser:
 ```bash
 python manage.py createsuperuser
 ```
 
-7. Run the development server:
+8. Run the development server:
 ```bash
 python manage.py runserver
 ```
@@ -163,4 +176,19 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## Support
 
-For support, please open an issue in the GitHub repository or contact the maintainers. 
+For support, please open an issue in the GitHub repository or contact the maintainers.
+
+## Media Storage
+
+The platform uses Cloudinary for media storage, providing:
+- Secure cloud storage for all media files
+- Automatic image optimization
+- Video streaming capabilities
+- CDN delivery for faster content loading
+- Automatic backup and versioning
+
+To configure Cloudinary:
+1. Sign up for a Cloudinary account
+2. Get your credentials from the Cloudinary dashboard
+3. Add them to your `.env` file
+4. The platform will automatically handle media uploads to Cloudinary 
