@@ -9,6 +9,7 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  withCredentials: true, // Important for cookies
 });
 
 // Create auth instance with different base URL
@@ -17,90 +18,21 @@ const authApi = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  withCredentials: true, // Important for cookies
 });
 
-// Token refresh logic
-let isRefreshing = false;
-let failedQueue = [];
-
-const processQueue = (error, token = null) => {
-  failedQueue.forEach(prom => {
-    if (error) {
-      prom.reject(error);
-    } else {
-      prom.resolve(token);
-    }
-  });
-  failedQueue = [];
-};
-
-const refreshToken = async () => {
-  try {
-    const refreshToken = localStorage.getItem('refreshToken');
-    if (!refreshToken) {
-      throw new Error('No refresh token available');
-    }
-
-    const response = await authApi.post('/auth/token/refresh/', {
-      refresh: refreshToken
-    });
-
-    const { access } = response.data;
-    localStorage.setItem('token', access);
-    return access;
-  } catch (error) {
-    // If refresh fails, clear tokens and redirect to login
-    localStorage.removeItem('token');
-    localStorage.removeItem('refreshToken');
-    window.location.href = '/login';
-    throw error;
-  }
-};
-
-// Add request interceptor for authentication
+// Remove token refresh logic since it's handled by cookies
 const addAuthHeader = (config) => {
-  const token = localStorage.getItem('token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
   return config;
 };
 
-// Add response interceptor for token refresh
+// Add response interceptor for handling errors
 const handleResponseError = async (error) => {
-  const originalRequest = error.config;
-
-  // If error is not 401 or request has already been retried, reject
-  if (error.response?.status !== 401 || originalRequest._retry) {
-    return Promise.reject(error);
+  if (error.response?.status === 401) {
+    // Redirect to login on authentication error
+    window.location.href = '/login';
   }
-
-  if (isRefreshing) {
-    // If token refresh is in progress, queue the request
-    return new Promise((resolve, reject) => {
-      failedQueue.push({ resolve, reject });
-    })
-      .then(token => {
-        originalRequest.headers.Authorization = `Bearer ${token}`;
-        return api(originalRequest);
-      })
-      .catch(err => Promise.reject(err));
-  }
-
-  originalRequest._retry = true;
-  isRefreshing = true;
-
-  try {
-    const newToken = await refreshToken();
-    originalRequest.headers.Authorization = `Bearer ${newToken}`;
-    processQueue(null, newToken);
-    return api(originalRequest);
-  } catch (error) {
-    processQueue(error, null);
-    return Promise.reject(error);
-  } finally {
-    isRefreshing = false;
-  }
+  return Promise.reject(error);
 };
 
 // Apply interceptors
@@ -115,9 +47,6 @@ export const authAPI = {
   register: (userData) => authApi.post('auth/register/student/', userData),
   logout: () => authApi.post('auth/dj-rest-auth/logout/'),
   updateProfile: (data) => authApi.put('/auth/profile/', data),
-  refreshToken: () => authApi.post('auth/dj-rest-auth/token/refresh/', {
-    refresh: localStorage.getItem('refreshToken')
-  }),
 };
 
 // Courses API
