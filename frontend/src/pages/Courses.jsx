@@ -19,7 +19,7 @@ import {
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchAllCourses } from '../store/slices/coursesSlice';
+import { fetchCourses } from '../store/slices/coursesSlice';
 
 const Courses = () => {
   const navigate = useNavigate();
@@ -32,7 +32,7 @@ const Courses = () => {
   const [sortBy, setSortBy] = useState('newest');
 
   useEffect(() => {
-    dispatch(fetchAllCourses());
+    dispatch(fetchCourses());
   }, [dispatch]);
 
   const handleSearch = (e) => {
