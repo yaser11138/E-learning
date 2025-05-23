@@ -5,11 +5,8 @@ import {
   Paper,
   Typography,
   Box,
-  LinearProgress,
   Card,
   CardContent,
-  CardMedia,
-  Button,
   CircularProgress,
   List,
   ListItem,
@@ -17,23 +14,48 @@ import {
   Divider,
   Chip
 } from '@mui/material';
-import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
-import { fetchDashboardData } from '../store/slices/userSlice';
-import { fetchEnrolledCourses } from '../store/slices/coursesSlice';
+import { useSelector } from 'react-redux';
+import api from '../services/api';
+import { formatDistanceToNow } from 'date-fns';
+
+const StatCard = ({ title, value, subtitle }) => (
+  <Card>
+    <CardContent>
+      <Typography color="textSecondary" gutterBottom>
+        {title}
+      </Typography>
+      <Typography variant="h4" component="div">
+        {value}
+      </Typography>
+      {subtitle && (
+        <Typography variant="body2" color="textSecondary">
+          {subtitle}
+        </Typography>
+      )}
+    </CardContent>
+  </Card>
+);
 
 const Dashboard = () => {
-  const navigate = useNavigate();
-  const dispatch = useDispatch();
-  const { profile, dashboardStats, loading: userLoading } = useSelector((state) => state.user);
-  const { enrolledCourses, loading: coursesLoading } = useSelector((state) => state.courses);
+  const [loading, setLoading] = useState(true);
+  const [dashboardData, setDashboardData] = useState(null);
 
   useEffect(() => {
-    dispatch(fetchDashboardData());
-    dispatch(fetchEnrolledCourses());
-  }, [dispatch]);
+    const fetchDashboardData = async () => {
+      try {
+        const response = await api.get('/dashboard/');
+        setDashboardData(response.data);
+      } catch (error) {
+        console.error('Error fetching dashboard data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  if (userLoading || coursesLoading) {
+    fetchDashboardData();
+  }, []);
+
+  if (loading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="80vh">
         <CircularProgress />
@@ -41,98 +63,217 @@ const Dashboard = () => {
     );
   }
 
-  return (
-    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-      <Grid container spacing={3}>
-        {/* User Stats */}
-        <Grid item xs={12}>
-          <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
-            <Typography variant="h6" gutterBottom>
-              Welcome back, {profile?.firstName}!
-            </Typography>
-            <Grid container spacing={2}>
-              <Grid item xs={12} sm={6} md={3}>
-                <Paper sx={{ p: 2, textAlign: 'center' }}>
-                  <Typography variant="h4">{dashboardStats?.totalCourses || 0}</Typography>
-                  <Typography color="textSecondary">Total Courses</Typography>
-                </Paper>
-              </Grid>
-              <Grid item xs={12} sm={6} md={3}>
-                <Paper sx={{ p: 2, textAlign: 'center' }}>
-                  <Typography variant="h4">{dashboardStats?.completedCourses || 0}</Typography>
-                  <Typography color="textSecondary">Completed</Typography>
-                </Paper>
-              </Grid>
-              <Grid item xs={12} sm={6} md={3}>
-                <Paper sx={{ p: 2, textAlign: 'center' }}>
-                  <Typography variant="h4">{dashboardStats?.inProgressCourses || 0}</Typography>
-                  <Typography color="textSecondary">In Progress</Typography>
-                </Paper>
-              </Grid>
-              <Grid item xs={12} sm={6} md={3}>
-                <Paper sx={{ p: 2, textAlign: 'center' }}>
-                  <Typography variant="h4">{dashboardStats?.certificates || 0}</Typography>
-                  <Typography color="textSecondary">Certificates</Typography>
-                </Paper>
-              </Grid>
-            </Grid>
-          </Paper>
+  if (dashboardData?.role === 'student') {
+    const { statistics, recent_courses, enrolled_courses } = dashboardData;
+    
+    return (
+      <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+        <Typography variant="h4" gutterBottom>
+          Student Dashboard
+        </Typography>
+        
+        {/* Statistics Cards */}
+        <Grid container spacing={3} sx={{ mb: 4 }}>
+          <Grid item xs={12} sm={6} md={3}>
+            <StatCard
+              title="Total Courses"
+              value={statistics.totalCourses}
+              subtitle="Enrolled Courses"
+            />
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <StatCard
+              title="Completed"
+              value={statistics.completedCourses}
+              subtitle="Courses Finished"
+            />
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <StatCard
+              title="In Progress"
+              value={statistics.inProgressCourses}
+              subtitle="Active Courses"
+            />
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <StatCard
+              title="Average Progress"
+              value={`${statistics.averageProgress}%`}
+              subtitle="Across All Courses"
+            />
+          </Grid>
         </Grid>
 
-        {/* Enrolled Courses */}
-        <Grid item xs={12}>
-          <Paper sx={{ p: 2 }}>
-            <Typography variant="h6" gutterBottom>
-              Your Courses
-            </Typography>
-            <Grid container spacing={3}>
-              {enrolledCourses.map((course) => (
-                <Grid item xs={12} sm={6} md={4} key={course.id}>
-                  <Card>
-                    <CardMedia
-                      component="img"
-                      height="140"
-                      image={course.image}
-                      alt={course.title}
+        <Grid container spacing={3}>
+          {/* Recent Courses */}
+          <Grid item xs={12} md={4}>
+            <Paper sx={{ p: 2 }}>
+              <Typography variant="h6" gutterBottom>
+                Recently Accessed
+              </Typography>
+              <List>
+                {recent_courses.map((course) => (
+                  <React.Fragment key={course.id}>
+                    <ListItem>
+                      <ListItemText
+                        primary={course.title}
+                        secondary={`${course.progress}% complete`}
+                      />
+                      <Typography variant="caption" color="textSecondary">
+                        {formatDistanceToNow(new Date(course.last_accessed), { addSuffix: true })}
+                      </Typography>
+                    </ListItem>
+                    <Divider />
+                  </React.Fragment>
+                ))}
+              </List>
+            </Paper>
+          </Grid>
+
+          {/* All Courses */}
+          <Grid item xs={12} md={8}>
+            <Paper sx={{ p: 2 }}>
+              <Typography variant="h6" gutterBottom>
+                All Courses
+              </Typography>
+              <List>
+                {enrolled_courses.map((course) => (
+                  <ListItem key={course.id}>
+                    <ListItemText
+                      primary={course.title}
+                      secondary={`Started ${formatDistanceToNow(new Date(course.started_at), { addSuffix: true })}`}
                     />
-                    <CardContent>
-                      <Typography gutterBottom variant="h6" component="div">
-                        {course.title}
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                      <Typography variant="body2" color="textSecondary">
+                        {course.progress}%
                       </Typography>
-                      <Typography variant="body2" color="text.secondary" gutterBottom>
-                        {course.description}
-                      </Typography>
-                      <Box sx={{ mt: 2 }}>
-                        <Typography variant="body2" color="text.secondary">
-                          Progress
-                        </Typography>
-                        <LinearProgress
-                          variant="determinate"
-                          value={course.progress || 0}
-                          sx={{ mt: 1 }}
+                      {course.completed && (
+                        <Chip
+                          label="Completed"
+                          color="success"
+                          size="small"
                         />
-                        <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                          {course.progress || 0}% Complete
-                        </Typography>
-                      </Box>
-                      <Button
-                        variant="contained"
-                        fullWidth
-                        sx={{ mt: 2 }}
-                        onClick={() => navigate(`/courses/${course.id}`)}
-                      >
-                        Continue Learning
-                      </Button>
-                    </CardContent>
-                  </Card>
-                </Grid>
-              ))}
-            </Grid>
-          </Paper>
+                      )}
+                    </Box>
+                  </ListItem>
+                ))}
+              </List>
+            </Paper>
+          </Grid>
         </Grid>
-      </Grid>
-    </Container>
-  );
+      </Container>
+    );
+  }
+
+  if (dashboardData?.role === 'teacher') {
+    const { statistics, topCourses, courses } = dashboardData;
+    
+    return (
+      <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+        <Typography variant="h4" gutterBottom>
+          Teacher Dashboard
+        </Typography>
+        
+        {/* Statistics Cards */}
+        <Grid container spacing={3} sx={{ mb: 4 }}>
+          <Grid item xs={12} sm={6} md={3}>
+            <StatCard
+              title="Total Courses"
+              value={statistics.totalCourses}
+              subtitle="Created Courses"
+            />
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <StatCard
+              title="Active Courses"
+              value={statistics.activeCourses}
+              subtitle="Currently Active"
+            />
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <StatCard
+              title="Total Students"
+              value={statistics.totalStudents}
+              subtitle="Enrolled Students"
+            />
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <StatCard
+              title="Total Revenue"
+              value={`$${statistics.totalRevenue}`}
+              subtitle="From All Courses"
+            />
+          </Grid>
+        </Grid>
+
+        <Grid container spacing={3}>
+          {/* Top Performing Courses */}
+          <Grid item xs={12} md={4}>
+            <Paper sx={{ p: 2 }}>
+              <Typography variant="h6" gutterBottom>
+                Top Performing Courses
+              </Typography>
+              <List>
+                {topCourses.map((course) => (
+                  <React.Fragment key={course.id}>
+                    <ListItem>
+                      <ListItemText
+                        primary={course.title}
+                        secondary={`${course.enrolledStudents} students enrolled`}
+                      />
+                      <Typography variant="caption" color="textSecondary">
+                        ${course.price}
+                      </Typography>
+                    </ListItem>
+                    <Divider />
+                  </React.Fragment>
+                ))}
+              </List>
+            </Paper>
+          </Grid>
+
+          {/* All Courses */}
+          <Grid item xs={12} md={8}>
+            <Paper sx={{ p: 2 }}>
+              <Typography variant="h6" gutterBottom>
+                All Courses
+              </Typography>
+              <List>
+                {courses.map((course) => (
+                  <ListItem key={course.id}>
+                    <ListItemText
+                      primary={course.title}
+                      secondary={`Created ${formatDistanceToNow(new Date(course.createdAt), { addSuffix: true })}`}
+                    />
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                      <Typography variant="body2" color="textSecondary">
+                        {course.enrolledStudents} students
+                      </Typography>
+                      {course.isActive ? (
+                        <Chip
+                          label="Active"
+                          color="success"
+                          size="small"
+                        />
+                      ) : (
+                        <Chip
+                          label="Inactive"
+                          color="default"
+                          size="small"
+                        />
+                      )}
+                    </Box>
+                  </ListItem>
+                ))}
+              </List>
+            </Paper>
+          </Grid>
+        </Grid>
+      </Container>
+    );
+  }
+
+  return null;
 };
 
 export default Dashboard; 

@@ -71,7 +71,7 @@ export const coursesAPI = {
 // User API
 export const userAPI = {
   getProfile: () => authApi.get('/auth/profile/'),
-  getDashboard: () => api.get('/student/dashboard/'),
+  getDashboard: () => api.get('/dashboard/'),
 };
 
 export default api; 
