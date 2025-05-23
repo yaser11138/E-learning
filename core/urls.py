@@ -31,6 +31,7 @@ api_urlpatterns = [
     path("content/", include(instructor_urls)),
     path("student/", include(student_urls)),
     path("enrollment/", include("enrollment.urls")),
+    path("dashboard/", include("dashboard.urls")),
 ]
 
 # Main URL patterns
