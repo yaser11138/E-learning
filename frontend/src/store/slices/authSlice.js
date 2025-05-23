@@ -9,7 +9,7 @@ const initialState = {
 };
 
 export const login = createAsyncThunk(
-  'auth/login',
+  'auth/dj-rest-auth/login/',
   async (credentials, { rejectWithValue }) => {
     try {
       const response = await authAPI.login(credentials);
@@ -21,7 +21,7 @@ export const login = createAsyncThunk(
 );
 
 export const register = createAsyncThunk(
-  'auth/register',
+  'auth/register/student/',
   async (userData, { rejectWithValue }) => {
     try {
       const response = await authAPI.register(userData);
@@ -32,7 +32,7 @@ export const register = createAsyncThunk(
   }
 );
 
-export const logout = createAsyncThunk('auth/logout', async () => {
+export const logout = createAsyncThunk('auth/auth/dj-rest-auth/logout/', async () => {
   try {
     await authAPI.logout();
   } catch (error) {
