@@ -36,7 +36,7 @@ class Course(CreateUpdateDate):
     required_time = models.IntegerField()
     summary = models.TextField()
     thumbnail = models.ImageField()
-    owner = models.ForeignKey(UserModel, on_delete=models.CASCADE)
+    owner = models.ForeignKey(UserModel, on_delete=models.CASCADE, related_name="courses")
     slug = AutoSlugField(null=False, populate_from="title")
 
     class Meta:
