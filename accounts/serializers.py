@@ -36,10 +36,14 @@ class StudentRegisterSerializer(RegisterSerializer):
 
 class StudentProfileSerializer(serializers.ModelSerializer):
     student = StudentSerializer()
+    role = serializers.SerializerMethodField()
 
     class Meta:
         model = User
-        fields = ["first_name", "last_name", "student"]
+        fields = ["first_name", "last_name", "student", "role"]
+
+    def get_role(self, obj):
+        return 'student'
 
     def update(self, instance, validated_data):
         student_data = validated_data.pop("student")
@@ -58,10 +62,14 @@ class StudentProfileSerializer(serializers.ModelSerializer):
 
 class InstructorProfileSerializer(serializers.ModelSerializer):
     instructor = InstructorSerializer()
+    role = serializers.SerializerMethodField()
 
     class Meta:
         model = User
-        fields = ["first_name", "last_name", "instructor"]
+        fields = ["first_name", "last_name", "instructor", "role"]
+
+    def get_role(self, obj):
+        return 'Instructor'
 
     def update(self, instance, validated_data):
         instructor_data = validated_data.pop("instructor")
