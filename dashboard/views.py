@@ -41,8 +41,8 @@ class DashboardView(APIView):
                     'inProgressCourses': in_progress_courses,
                     'averageProgress': round(avg_progress, 2)
                 },
-                'recent_courses': CourseProgressSerializer(recent_courses, many=True).data,
-                'enrolled_courses': CourseProgressSerializer(course_progresses, many=True).data
+                'recent_courses': CourseProgressSerializer(recent_courses, many=True, context={'request': request}).data,
+                'enrolled_courses': CourseProgressSerializer(course_progresses, many=True, context={'request': request}).data
             }
             
             serializer = StudentDashboardSerializer(data)
@@ -50,21 +50,20 @@ class DashboardView(APIView):
         
         elif hasattr(user, "instructor"):
             # Get courses created by the teacher
-            courses = user.created_courses.all()
+            courses = user.courses.all()
             
             # Calculate statistics
-            total_courses = courses.count()
-            active_courses = courses.filter(is_active=True).count()
-            total_students = sum(course.enrolled_students.count() for course in courses)
+            active_courses = courses.count()
+            total_students = sum(course.enrollments.count() for course in courses)
             total_revenue = sum(
-                course.price * course.enrolled_students.count() 
+                course.price * course.enrollments.count() 
                 for course in courses
             )
             
             # Get top performing courses (by enrollment)
             top_courses = sorted(
                 courses,
-                key=lambda x: x.enrolled_students.count(),
+                key=lambda x: x.enrollments.count(),
                 reverse=True
             )[:5]
             
@@ -72,14 +71,13 @@ class DashboardView(APIView):
             data = {
                 'role': 'teacher',
                 'statistics': {
-                    'totalCourses': total_courses,
                     'activeCourses': active_courses,
                     'totalStudents': total_students,
                     'totalRevenue': round(total_revenue, 2),
-                    'averageStudentsPerCourse': round(total_students / total_courses, 2) if total_courses > 0 else 0
+                    'averageStudentsPerCourse': round(total_students / active_courses, 2) if active_courses > 0 else 0
                 },
-                'top_courses': CourseSerializer(top_courses, many=True).data,
-                'courses': CourseSerializer(courses, many=True).data
+                'top_courses': CourseSerializer(top_courses, many=True, context={'request': request}).data,
+                'courses': CourseSerializer(courses, many=True, context={'request': request}).data
             }
             
             serializer = TeacherDashboardSerializer(data)
