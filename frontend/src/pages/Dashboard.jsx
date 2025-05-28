@@ -16,7 +16,7 @@ import {
 } from '@mui/material';
 import { useSelector } from 'react-redux';
 import api from '../services/api';
-import { formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow, isValid } from 'date-fns';
 
 const StatCard = ({ title, value, subtitle }) => (
   <Card>
@@ -35,6 +35,12 @@ const StatCard = ({ title, value, subtitle }) => (
     </CardContent>
   </Card>
 );
+
+const formatDate = (dateString) => {
+  if (!dateString) return 'N/A';
+  const date = new Date(dateString);
+  return isValid(date) ? formatDistanceToNow(date, { addSuffix: true }) : 'N/A';
+};
 
 const Dashboard = () => {
   const [loading, setLoading] = useState(true);
@@ -116,11 +122,11 @@ const Dashboard = () => {
                   <React.Fragment key={course.id}>
                     <ListItem>
                       <ListItemText
-                        primary={course.title}
-                        secondary={`${course.progress}% complete`}
+                        primary={course.course?.title || 'Unknown Course'}
+                        secondary={`${course.progress_percentage || 0}% complete`}
                       />
                       <Typography variant="caption" color="textSecondary">
-                        {formatDistanceToNow(new Date(course.last_accessed), { addSuffix: true })}
+                        {formatDate(course.last_accessed)}
                       </Typography>
                     </ListItem>
                     <Divider />
@@ -140,12 +146,12 @@ const Dashboard = () => {
                 {enrolled_courses.map((course) => (
                   <ListItem key={course.id}>
                     <ListItemText
-                      primary={course.title}
-                      secondary={`Started ${formatDistanceToNow(new Date(course.started_at), { addSuffix: true })}`}
+                      primary={course.course?.title || 'Unknown Course'}
+                      secondary={`Started ${formatDate(course.started_at)}`}
                     />
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                       <Typography variant="body2" color="textSecondary">
-                        {course.progress}%
+                        {course.progress_percentage || 0}%
                       </Typography>
                       {course.completed && (
                         <Chip
@@ -166,7 +172,7 @@ const Dashboard = () => {
   }
 
   if (dashboardData?.role === 'teacher') {
-    const { statistics, topCourses, courses } = dashboardData;
+    const { statistics, top_courses, courses } = dashboardData;
     
     return (
       <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
@@ -176,13 +182,6 @@ const Dashboard = () => {
         
         {/* Statistics Cards */}
         <Grid container spacing={3} sx={{ mb: 4 }}>
-          <Grid item xs={12} sm={6} md={3}>
-            <StatCard
-              title="Total Courses"
-              value={statistics.totalCourses}
-              subtitle="Created Courses"
-            />
-          </Grid>
           <Grid item xs={12} sm={6} md={3}>
             <StatCard
               title="Active Courses"
@@ -204,6 +203,13 @@ const Dashboard = () => {
               subtitle="From All Courses"
             />
           </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <StatCard
+              title="Avg Students/Course"
+              value={statistics.averageStudentsPerCourse}
+              subtitle="Per Course"
+            />
+          </Grid>
         </Grid>
 
         <Grid container spacing={3}>
@@ -214,12 +220,12 @@ const Dashboard = () => {
                 Top Performing Courses
               </Typography>
               <List>
-                {topCourses.map((course) => (
+                {top_courses.map((course) => (
                   <React.Fragment key={course.id}>
                     <ListItem>
                       <ListItemText
                         primary={course.title}
-                        secondary={`${course.enrolledStudents} students enrolled`}
+                        secondary={`${course.enrollments?.length || 0} students enrolled`}
                       />
                       <Typography variant="caption" color="textSecondary">
                         ${course.price}
@@ -243,25 +249,17 @@ const Dashboard = () => {
                   <ListItem key={course.id}>
                     <ListItemText
                       primary={course.title}
-                      secondary={`Created ${formatDistanceToNow(new Date(course.createdAt), { addSuffix: true })}`}
+                      secondary={`Created ${formatDate(course.created_at)}`}
                     />
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                       <Typography variant="body2" color="textSecondary">
-                        {course.enrolledStudents} students
+                        {course.enrollments?.length || 0} students
                       </Typography>
-                      {course.isActive ? (
-                        <Chip
-                          label="Active"
-                          color="success"
-                          size="small"
-                        />
-                      ) : (
-                        <Chip
-                          label="Inactive"
-                          color="default"
-                          size="small"
-                        />
-                      )}
+                      <Chip
+                        label={course.is_active ? "Active" : "Inactive"}
+                        color={course.is_active ? "success" : "default"}
+                        size="small"
+                      />
                     </Box>
                   </ListItem>
                 ))}
