@@ -21,7 +21,7 @@ import Dashboard from './pages/Dashboard';
 function App() {
   const dispatch = useDispatch();
   const { isAuthenticated } = useSelector((state) => state.auth);
-  const { loading: userLoading } = useSelector((state) => state.user);
+  const { loading: userLoading } = useSelector((state) => state.auth);
   const { loading: coursesLoading } = useSelector((state) => state.courses);
 
   useEffect(() => {

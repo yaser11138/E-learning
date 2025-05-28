@@ -9,40 +9,50 @@ const initialState = {
 };
 
 export const fetchUserProfile = createAsyncThunk(
-  'user/fetchProfile',
+  'auth/profile/',
   async (_, { rejectWithValue }) => {
     try {
+      console.log('Fetching user profile...');
       const response = await userAPI.getProfile();
+      console.log('Profile response:', response);
+      if (!response.data) {
+        throw new Error('No data received from profile endpoint');
+      }
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || 'Failed to fetch profile');
+      console.error('Profile fetch error:', error);
+      return rejectWithValue(
+        error.response?.data?.message || 
+        error.message || 
+        'Failed to fetch profile'
+      );
     }
   }
 );
 
 export const updateUserProfile = createAsyncThunk(
-  'user/updateProfile',
-  async (data, { rejectWithValue }) => {
+  'auth/profile',
+  async (profileData, { rejectWithValue }) => {
     try {
-      const response = await userAPI.updateProfile(data);
+      console.log('Updating profile...', profileData);
+      const response = await userAPI.updateProfile(profileData);
+      console.log('Profile update response:', response);
+      if (!response.data) {
+        throw new Error('No data received from profile update');
+      }
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || 'Failed to update profile');
+      console.error('Profile update error:', error);
+      return rejectWithValue(
+        error.response?.data?.message || 
+        error.message || 
+        'Failed to update profile'
+      );
     }
   }
 );
 
-export const fetchDashboardData = createAsyncThunk(
-  'user/fetchDashboard',
-  async (_, { rejectWithValue }) => {
-    try {
-      const response = await userAPI.getDashboard();
-      return response.data;
-    } catch (error) {
-      return rejectWithValue(error.response?.data?.message || 'Failed to fetch dashboard data');
-    }
-  }
-);
+
 
 const userSlice = createSlice({
   name: 'user',
@@ -77,19 +87,6 @@ const userSlice = createSlice({
         state.profile = action.payload;
       })
       .addCase(updateUserProfile.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload;
-      })
-      // Fetch dashboard data
-      .addCase(fetchDashboardData.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(fetchDashboardData.fulfilled, (state, action) => {
-        state.loading = false;
-        state.dashboardStats = action.payload;
-      })
-      .addCase(fetchDashboardData.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       });
