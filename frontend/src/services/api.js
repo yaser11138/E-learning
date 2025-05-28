@@ -46,31 +46,79 @@ export const authAPI = {
   login: (credentials) => authApi.post('auth/dj-rest-auth/login/', credentials),
   register: (userData) => authApi.post('auth/register/student/', userData),
   logout: () => authApi.post('auth/dj-rest-auth/logout/'),
-  updateProfile: (data) => authApi.put('/auth/profile/', data),
 };
 
 // Courses API
 export const coursesAPI = {
-  // Instructor endpoints
+  // Course Management
   getAllCourses: () => api.get('/content/courses/'),
-  getCourseById: (id) => api.get(`/content/courses/${id}/`),
-  createCourse: (courseData) => api.post('/content/courses/', courseData),
-  updateCourse: (id, courseData) => api.put(`/content/courses/${id}/`, courseData),
-  deleteCourse: (id) => api.delete(`/content/courses/${id}/`),
-  
+  getCourse: (slug) => api.get(`/content/courses/${slug}/`),
+  createCourse: (courseData) => {
+    const formData = new FormData();
+    Object.keys(courseData).forEach(key => {
+      formData.append(key, courseData[key]);
+    });
+    return api.post('/content/courses/', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+  },
+  updateCourse: (slug, courseData) => {
+    const formData = new FormData();
+    Object.keys(courseData).forEach(key => {
+      formData.append(key, courseData[key]);
+    });
+    return api.patch(`/content/courses/${slug}/`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+  },
+  deleteCourse: (slug) => api.delete(`/content/courses/${slug}/`),
+
+  // Module Management
+  getModules: (courseSlug) => api.get(`/content/courses/${courseSlug}/modules/`),
+  createModule: (courseSlug, moduleData) => api.post(`/content/courses/${courseSlug}/modules/`, moduleData),
+  updateModule: (moduleId, moduleData) => api.patch(`/content/modules/${moduleId}/`, moduleData),
+  deleteModule: (moduleId) => api.delete(`/content/modules/${moduleId}/`),
+
+  // Content Management
+  getModuleContents: (moduleSlug) => api.get(`/content/modules/${moduleSlug}/contents/`),
+  uploadContent: (moduleSlug, contentData) => {
+    const formData = new FormData();
+    Object.keys(contentData).forEach(key => {
+      formData.append(key, contentData[key]);
+    });
+    return api.post(`/content/modules/${moduleSlug}/contents/`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+  },
+  updateContent: (contentId, contentData) => {
+    const formData = new FormData();
+    Object.keys(contentData).forEach(key => {
+      formData.append(key, contentData[key]);
+    });
+    return api.patch(`/content/contents/${contentId}/`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+  },
+  deleteContent: (contentId) => api.delete(`/content/contents/${contentId}/`),
   // Student endpoints
   getEnrolledCourses: () => api.get('/student/courses/'),
   enrollInCourse: (courseId) => api.post(`/enrollment/enroll/${courseId}/`),
   getCourseProgress: (courseId) => api.get(`/student/courses/${courseId}/progress/`),
-  
-  // Content endpoints
-  getCourseContent: (courseId) => api.get(`/content/courses/${courseId}/content/`),
-  uploadContent: (courseId, contentData) => api.post(`/content/courses/${courseId}/content/`, contentData),
+  updateContentProgress: (contentId, progressData) => api.post(`/student/contents/${contentId}/progress/`, progressData),
 };
 
 // User API
 export const userAPI = {
   getProfile: () => authApi.get('/auth/profile/'),
+  updateProfile: (profileData) => authApi.put('/auth/profile/', profileData),
   getDashboard: () => api.get('/dashboard/'),
 };
 
