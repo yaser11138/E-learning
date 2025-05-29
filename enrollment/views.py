@@ -12,6 +12,7 @@ from drf_spectacular.utils import (
 )
 from drf_spectacular.types import OpenApiTypes
 from courses.models import Course
+from courses.tasks import process_course_enrollment
 from .models import Enrollment
 from .serializers import EnrollmentSerializer
 from core.permissions import IsInstructor, IsStudent
@@ -40,6 +41,8 @@ class EnrollmentCreateView(APIView):
         enrollment = Enrollment.objects.create(
             user=request.user, course=course, deadline=deadline
         )
+        # Process enrollment asynchronously
+        process_course_enrollment.delay(enrollment.id)
         enrollment_serializer = EnrollmentSerializer(instance=enrollment)
         return Response(data=enrollment_serializer.data, status=status.HTTP_201_CREATED)
 
