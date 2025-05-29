@@ -4,7 +4,6 @@ import { ThemeProvider, CssBaseline, CircularProgress, Box } from '@mui/material
 import { useDispatch, useSelector } from 'react-redux';
 import { theme } from './theme';
 import { fetchUserProfile } from './store/slices/userSlice';
-import { fetchCourses } from './store/slices/coursesSlice';
 
 // Components
 import Navbar from './components/layout/Navbar';
@@ -17,21 +16,22 @@ import CourseDetail from './pages/CourseDetail';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
+import CourseCreation from './pages/CourseCreation';
+import CourseEdit from './pages/CourseEdit';
+import InstructorCourses from './pages/InstructorCourses';
 
 function App() {
   const dispatch = useDispatch();
   const { isAuthenticated } = useSelector((state) => state.auth);
   const { loading: userLoading } = useSelector((state) => state.auth);
-  const { loading: coursesLoading } = useSelector((state) => state.courses);
 
   useEffect(() => {
     if (isAuthenticated) {
       dispatch(fetchUserProfile());
-      dispatch(fetchCourses());
     }
   }, [isAuthenticated, dispatch]);
 
-  if (userLoading || coursesLoading) {
+  if (userLoading) {
     return (
       <Box
         display="flex"
@@ -53,6 +53,30 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/courses" element={<Courses />} />
           <Route path="/courses/:id" element={<CourseDetail />} />
+          <Route
+            path="/course/create"
+            element={
+              <ProtectedRoute>
+                <CourseCreation />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/content/courses/:slug/edit"
+            element={
+              <ProtectedRoute>
+                <CourseEdit />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/instructor/courses"
+            element={
+              <ProtectedRoute>
+                <InstructorCourses />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="/login"
             element={isAuthenticated ? <Navigate to="/dashboard" /> : <Login />}
