@@ -51,7 +51,7 @@ export const authAPI = {
 // Courses API
 export const coursesAPI = {
   // Course Management
-  getAllCourses: () => api.get('/content/courses/'),
+  getInstructorCourses: () => api.get('/content/courses/'),
   getCourse: (slug) => api.get(`/content/courses/${slug}/`),
   createCourse: (courseData) => {
     const formData = new FormData();
@@ -78,8 +78,8 @@ export const coursesAPI = {
   deleteCourse: (slug) => api.delete(`/content/courses/${slug}/`),
 
   // Module Management
-  getModules: (courseSlug) => api.get(`/content/courses/${courseSlug}/modules/`),
-  createModule: (courseSlug, moduleData) => api.post(`/content/courses/${courseSlug}/modules/`, moduleData),
+  getModules: (courseSlug) => api.get(`/content/course/${courseSlug}/modules/`),
+  createModule: (courseSlug, moduleData) => api.post(`/content/course/${courseSlug}/modules/`, moduleData),
   updateModule: (moduleId, moduleData) => api.patch(`/content/modules/${moduleId}/`, moduleData),
   deleteModule: (moduleId) => api.delete(`/content/modules/${moduleId}/`),
 
@@ -90,7 +90,7 @@ export const coursesAPI = {
     Object.keys(contentData).forEach(key => {
       formData.append(key, contentData[key]);
     });
-    return api.post(`/content/modules/${moduleSlug}/contents/`, formData, {
+    return api.post(`/content/module/${moduleSlug}/contents/`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
@@ -109,10 +109,20 @@ export const coursesAPI = {
   },
   deleteContent: (contentId) => api.delete(`/content/contents/${contentId}/`),
   // Student endpoints
-  getEnrolledCourses: () => api.get('/student/courses/'),
-  enrollInCourse: (courseId) => api.post(`/enrollment/enroll/${courseId}/`),
-  getCourseProgress: (courseId) => api.get(`/student/courses/${courseId}/progress/`),
-  updateContentProgress: (contentId, progressData) => api.post(`/student/contents/${contentId}/progress/`, progressData),
+  getAllCourses: () => api.get('/student/courses/'),
+  getCourseProgress: (courseId) => api.get(`/student/course/${courseId}/progress/`),
+  updateContentProgress: (contentId, progressData) => api.post(`/student/content/${contentId}/progress/`, progressData),
+};
+
+// Enrollment API
+export const enrollmentAPI = {
+  // Student enrollment endpoints
+  enrollInCourse: (courseSlug) => api.post(`/enrollment/courses/${courseSlug}/enroll/`),
+  getStudentEnrollments: () => api.get('/enrollment/enrollments/'),
+  
+  // Instructor enrollment endpoints
+  getInstructorEnrollments: () => api.get('/enrollment/instructor/enrollments/'),
+  getCourseEnrollments: (courseSlug) => api.get(`/enrollment/instructor/courses/${courseSlug}/enrollments/`),
 };
 
 // User API
