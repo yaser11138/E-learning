@@ -57,8 +57,6 @@ def process_course_enrollment(enrollment_id):
     try:
         enrollment = CourseEnrollment.objects.get(id=enrollment_id)
 
-        # Perform enrollment processing
-        enrollment.process_enrollment()
 
         # Send welcome email
         send_mail(

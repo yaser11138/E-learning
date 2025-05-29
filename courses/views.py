@@ -31,6 +31,7 @@ from .models import (
     CourseMedia,
 )
 from .utils import validate_file, upload_file_to_cloudinary, delete_file_from_cloudinary
+from .tasks import send_course_update_notification
 
 
 @extend_schema_view(
@@ -68,7 +69,10 @@ class CourseViewSet(ModelViewSet):
         responses={200: CourseSerializer, 400: OpenApiTypes.OBJECT},
     )
     def update(self, request, *args, **kwargs):
-        return super().update(request, *args, **kwargs)
+        response = super().update(request, *args, **kwargs)
+        # Send notification after successful update
+        send_course_update_notification.delay(self.get_object().id)
+        return response
 
     @extend_schema(
         summary="Partial Update an existing course",
@@ -256,6 +260,7 @@ RESOURCE_TYPE_MAPPING = {
     "TextContent": None,
 }
 
+
 @extend_schema_view(
     get=extend_schema(tags=["content"]),
     post=extend_schema(tags=["content"]),
@@ -263,8 +268,6 @@ RESOURCE_TYPE_MAPPING = {
 class ContentViewListCreate(APIView):
     permission_classes = [IsAuthenticated, IsOwner, IsInstructor]
     parser_classes = (MultiPartParser, FormParser)
-
-
 
     @extend_schema(
         summary="List module contents",
@@ -504,7 +507,7 @@ class ContentDetailView(ViewSet):
         self.check_object_permissions(request, content.module.course)
 
         # Handle file updates if a new file is provided
-        if content.resourcetype in ("VideoContent" , "ImageContent", "FileContent"):
+        if content.resourcetype in ("VideoContent", "ImageContent", "FileContent"):
             file_field = RESOURCE_TYPE_MAPPING[content.resourcetype]
             file = request.FILES.get(file_field)
 
