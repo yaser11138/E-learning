@@ -19,6 +19,8 @@ import { Menu as MenuIcon, Add as AddIcon, School as SchoolIcon } from '@mui/ico
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { logout } from '../../store/slices/authSlice';
+import { authAPI } from '../../services/api';
+import { coursesAPI } from '../../services/api';
 
 const Navbar = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -49,9 +51,14 @@ const Navbar = () => {
     setMobileOpen(!mobileOpen);
   };
 
-  const handleLogout = () => {
-    dispatch(logout());
-    navigate('/login');
+  const handleLogout = async () => {
+    try {
+      await authAPI.logout();
+      dispatch(logout());
+      navigate('/login');
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
   };
 
   const handleMenuOpen = (event) => {
