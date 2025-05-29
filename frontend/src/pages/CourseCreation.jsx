@@ -13,12 +13,13 @@ import {
   Alert,
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
-import { coursesAPI } from '../services/api';
+import { useDispatch, useSelector } from 'react-redux';
+import { createCourse } from '../store/slices/coursesSlice';
 
 const CourseCreation = () => {
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const dispatch = useDispatch();
+  const { loading, error } = useSelector((state) => state.courses);
   const [courseData, setCourseData] = useState({
     title: '',
     description: '',
@@ -46,26 +47,19 @@ const CourseCreation = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
-    setError(null);
 
-    try {
-      const formData = new FormData();
-      formData.append('title', courseData.title);
-      formData.append('description', courseData.description);
-      formData.append('price', courseData.price);
-      formData.append('is_published', String(courseData.is_published));
-      if (courseData.thumbnail) {
-        formData.append('thumbnail', courseData.thumbnail);
-      }
+    const formData = new FormData();
+    formData.append('title', courseData.title);
+    formData.append('description', courseData.description);
+    formData.append('price', courseData.price);
+    formData.append('is_published', String(courseData.is_published));
+    if (courseData.thumbnail) {
+      formData.append('thumbnail', courseData.thumbnail);
+    }
 
-      const response = await coursesAPI.createCourse(formData);
-      navigate(`/courses/${response.data.slug}/edit`);
-    } catch (err) {
-      setError(err.response?.data?.message || 'Failed to create course');
-      console.error('Error creating course:', err);
-    } finally {
-      setLoading(false);
+    const result = await dispatch(createCourse(formData));
+    if (!result.error) {
+      navigate(`/content/courses/${result.payload.slug}/edit`);
     }
   };
 

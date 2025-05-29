@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Box,
   Container,
@@ -10,6 +10,8 @@ import {
   Alert,
 } from '@mui/material';
 import { useParams } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchCourseById } from '../store/slices/coursesSlice';
 import { coursesAPI } from '../services/api';
 import ModuleManagement from '../components/ModuleManagement';
 import ContentUpload from '../components/ContentUpload';
@@ -29,34 +31,25 @@ function TabPanel({ children, value, index }) {
 
 const CourseEdit = () => {
   const { slug } = useParams();
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [course, setCourse] = useState(null);
+  const dispatch = useDispatch();
+  const { currentCourse: course, loading, error } = useSelector((state) => state.courses);
   const [modules, setModules] = useState([]);
   const [selectedModule, setSelectedModule] = useState(null);
   const [contents, setContents] = useState([]);
   const [activeTab, setActiveTab] = useState(0);
 
   useEffect(() => {
-    const fetchCourseData = async () => {
-      try {
-        setLoading(true);
-        const response = await coursesAPI.getCourse(slug);
-        setCourse(response.data);
-        setModules(response.data.modules || []);
-        if (response.data.modules?.length > 0) {
-          setSelectedModule(response.data.modules[0]);
-        }
-      } catch (err) {
-        setError(err.response?.data?.message || 'Failed to fetch course data');
-        console.error('Error fetching course:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
+    dispatch(fetchCourseById(slug));
+  }, [dispatch, slug]);
 
-    fetchCourseData();
-  }, [slug]);
+  useEffect(() => {
+    if (course) {
+      setModules(course.modules || []);
+      if (course.modules?.length > 0) {
+        setSelectedModule(course.modules[0]);
+      }
+    }
+  }, [course]);
 
   useEffect(() => {
     const fetchModuleContents = async () => {
@@ -65,7 +58,6 @@ const CourseEdit = () => {
           const response = await coursesAPI.getModuleContents(selectedModule.slug);
           setContents(response.data);
         } catch (err) {
-          setError(err.response?.data?.message || 'Failed to fetch module contents');
           console.error('Error fetching module contents:', err);
         }
       }
