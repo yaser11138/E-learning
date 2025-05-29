@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { coursesAPI } from '../../services/api';
+import { enrollmentAPI } from '../../services/api';
 
 const initialState = {
   courses: [],
@@ -21,14 +22,50 @@ export const fetchCourses = createAsyncThunk(
   }
 );
 
+export const fetchInstructorCourses = createAsyncThunk(
+  'courses/fetchInstructor',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await coursesAPI.getInstructorCourses();
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to fetch instructor courses');
+    }
+  }
+);
+
 export const fetchCourseById = createAsyncThunk(
   'courses/fetchById',
-  async (id, { rejectWithValue }) => {
+  async (slug, { rejectWithValue }) => {
     try {
-      const response = await coursesAPI.getCourseById(id);
+      const response = await coursesAPI.getCourse(slug);
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to fetch course');
+    }
+  }
+);
+
+export const createCourse = createAsyncThunk(
+  'courses/create',
+  async (courseData, { rejectWithValue }) => {
+    try {
+      const response = await coursesAPI.createCourse(courseData);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to create course');
+    }
+  }
+);
+
+export const updateCourse = createAsyncThunk(
+  'courses/update',
+  async ({ slug, courseData }, { rejectWithValue }) => {
+    try {
+      const response = await coursesAPI.updateCourse(slug, courseData);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to update course');
     }
   }
 );
@@ -37,7 +74,7 @@ export const fetchEnrolledCourses = createAsyncThunk(
   'courses/fetchEnrolled',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await coursesAPI.getEnrolledCourses();
+      const response = await enrollmentAPI.getStudentEnrollments();
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to fetch enrolled courses');
@@ -49,7 +86,7 @@ export const enrollInCourse = createAsyncThunk(
   'courses/enroll',
   async (courseId, { rejectWithValue }) => {
     try {
-      const response = await coursesAPI.enrollInCourse(courseId);
+      const response = await enrollmentAPI.enrollInCourse(courseId);
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to enroll in course');
@@ -80,6 +117,19 @@ const coursesSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
+      // Fetch instructor courses
+      .addCase(fetchInstructorCourses.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchInstructorCourses.fulfilled, (state, action) => {
+        state.loading = false;
+        state.courses = action.payload;
+      })
+      .addCase(fetchInstructorCourses.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
       // Fetch course by ID
       .addCase(fetchCourseById.pending, (state) => {
         state.loading = true;
@@ -90,6 +140,36 @@ const coursesSlice = createSlice({
         state.currentCourse = action.payload;
       })
       .addCase(fetchCourseById.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      // Create course
+      .addCase(createCourse.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(createCourse.fulfilled, (state, action) => {
+        state.loading = false;
+        state.courses.push(action.payload);
+      })
+      .addCase(createCourse.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      // Update course
+      .addCase(updateCourse.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(updateCourse.fulfilled, (state, action) => {
+        state.loading = false;
+        const index = state.courses.findIndex(course => course.slug === action.payload.slug);
+        if (index !== -1) {
+          state.courses[index] = action.payload;
+        }
+        state.currentCourse = action.payload;
+      })
+      .addCase(updateCourse.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       })
