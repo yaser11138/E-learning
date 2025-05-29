@@ -8,7 +8,7 @@ from .views import (
 )
 
 router = routers.DefaultRouter()
-router.register("course", StudentCourseView, basename="course_list")
+router.register("courses", StudentCourseView, basename="course_list")
 
 urlpatterns = router.urls
 

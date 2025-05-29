@@ -2,7 +2,7 @@ from django.urls import path
 from rest_framework import routers
 from .views import CourseViewSet, ModuleViewSet, ModuleCreateView, ModuleListView, ContentViewListCreate, ContentDetailView
 router = routers.DefaultRouter()
-router.register(r'course', CourseViewSet, basename='course')
+router.register(r'courses', CourseViewSet, basename='course')
 router.register(r'modules', ModuleViewSet, basename="module")
 router.register(r'contents', ContentDetailView, basename="content")
 urlpatterns = router.urls
