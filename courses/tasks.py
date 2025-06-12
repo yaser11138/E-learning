@@ -2,8 +2,8 @@ from celery import shared_task
 from django.core.cache import cache
 from django.core.mail import send_mail
 from django.conf import settings
-from .models import Course, CourseEnrollment
-
+from .models import Course
+from enrollment.models import Enrollment
 
 @shared_task
 def update_course_statistics(course_id):
@@ -11,11 +11,10 @@ def update_course_statistics(course_id):
     try:
         course = Course.objects.get(id=course_id)
         stats = {
-            "total_enrollments": CourseEnrollment.objects.filter(course=course).count(),
-            "active_students": CourseEnrollment.objects.filter(
+            "total_enrollments": Enrollment.objects.filter(course=course).count(),
+            "active_students": Enrollment.objects.filter(
                 course=course, is_active=True
-            ).count(),
-            "completion_rate": course.calculate_completion_rate(),
+            ).count()
         }
 
         # Cache the statistics for 1 hour
@@ -32,7 +31,7 @@ def send_course_update_notification(course_id):
     """Send email notifications to enrolled students about course updates."""
     try:
         course = Course.objects.get(id=course_id)
-        enrolled_students = CourseEnrollment.objects.filter(
+        enrolled_students = Enrollment.objects.filter(
             course=course, is_active=True
         ).select_related("student")
 
@@ -55,7 +54,7 @@ def send_course_update_notification(course_id):
 def process_course_enrollment(enrollment_id):
     """Process course enrollment asynchronously."""
     try:
-        enrollment = CourseEnrollment.objects.get(id=enrollment_id)
+        enrollment = Enrollment.objects.get(id=enrollment_id)
 
 
         # Send welcome email
@@ -71,5 +70,5 @@ def process_course_enrollment(enrollment_id):
         )
 
         return True
-    except CourseEnrollment.DoesNotExist:
+    except Enrollment.DoesNotExist:
         return False
