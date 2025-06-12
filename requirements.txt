@@ -7,7 +7,9 @@
 amqp==5.3.1
     # via kombu
 asgiref==3.8.1
-    # via django
+    # via
+    #   django
+    #   django-cors-headers
 attrs==25.3.0
     # via
     #   jsonschema
@@ -53,6 +55,7 @@ django==4.2.5
     #   -r requirements.in
     #   dj-rest-auth
     #   django-allauth
+    #   django-cors-headers
     #   django-polymorphic
     #   django-redis
     #   django-rest-polymorphic
@@ -63,6 +66,8 @@ django==4.2.5
 django-allauth==0.52.0
     # via -r requirements.in
 django-cloudinary-storage==0.3.0
+    # via -r requirements.in
+django-cors-headers==4.3.1
     # via -r requirements.in
 django-environ==0.12.0
     # via -r requirements.in
