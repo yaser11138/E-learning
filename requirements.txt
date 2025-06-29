@@ -8,12 +8,20 @@ amqp==5.3.1
     # via kombu
 asgiref==3.8.1
     # via
+    #   channels
+    #   daphne
     #   django
     #   django-cors-headers
 attrs==25.3.0
     # via
     #   jsonschema
     #   referencing
+    #   service-identity
+    #   twisted
+autobahn==24.4.2
+    # via daphne
+automat==25.4.16
+    # via twisted
 billiard==4.2.1
     # via celery
 celery==5.3.6
@@ -24,6 +32,8 @@ certifi==2025.1.31
     #   requests
 cffi==1.17.1
     # via cryptography
+channels[daphne]==4.2.2
+    # via -r requirements.in
 charset-normalizer==3.4.1
     # via requests
 click==8.2.0
@@ -44,8 +54,16 @@ cloudinary==1.37.0
     #   django-cloudinary-storage
 colorama==0.4.6
     # via click
+constantly==23.10.4
+    # via twisted
 cryptography==44.0.2
-    # via pyjwt
+    # via
+    #   autobahn
+    #   pyjwt
+    #   pyopenssl
+    #   service-identity
+daphne==4.2.0
+    # via channels
 defusedxml==0.7.1
     # via python3-openid
 dj-rest-auth==4.0.0
@@ -53,6 +71,7 @@ dj-rest-auth==4.0.0
 django==4.2.5
     # via
     #   -r requirements.in
+    #   channels
     #   dj-rest-auth
     #   django-allauth
     #   django-cors-headers
@@ -92,8 +111,17 @@ drf-spectacular[sidecar]==0.28.0
     # via -r requirements.in
 drf-spectacular-sidecar==2025.3.1
     # via drf-spectacular
+hyperlink==21.0.0
+    # via
+    #   autobahn
+    #   twisted
 idna==3.10
-    # via requests
+    # via
+    #   hyperlink
+    #   requests
+    #   twisted
+incremental==24.7.2
+    # via twisted
 inflection==0.5.1
     # via drf-spectacular
 jsonschema==4.23.0
@@ -110,12 +138,20 @@ prompt-toolkit==3.0.51
     # via click-repl
 psycopg2==2.9.9
     # via -r requirements.in
+pyasn1==0.6.1
+    # via
+    #   pyasn1-modules
+    #   service-identity
+pyasn1-modules==0.4.2
+    # via service-identity
 pycparser==2.22
     # via cffi
 pyjwt[crypto]==2.10.1
     # via
     #   django-allauth
     #   djangorestframework-simplejwt
+pyopenssl==25.1.0
+    # via twisted
 python-dateutil==2.9.0.post0
     # via celery
 python3-openid==3.2.0
@@ -141,6 +177,8 @@ rpds-py==0.24.0
     # via
     #   jsonschema
     #   referencing
+service-identity==24.2.0
+    # via twisted
 six==1.17.0
     # via
     #   cloudinary
@@ -148,8 +186,15 @@ six==1.17.0
     #   python-dateutil
 sqlparse==0.5.3
     # via django
+twisted[tls]==25.5.0
+    # via daphne
+txaio==25.6.1
+    # via autobahn
 typing-extensions==4.13.0
-    # via referencing
+    # via
+    #   pyopenssl
+    #   referencing
+    #   twisted
 tzdata==2025.2
     # via
     #   celery
@@ -168,3 +213,8 @@ vine==5.1.0
     #   kombu
 wcwidth==0.2.13
     # via prompt-toolkit
+zope-interface==7.2
+    # via twisted
+
+# The following packages are considered to be unsafe in a requirements file:
+# setuptools

@@ -67,7 +67,8 @@ LOCAL_APPS = [
     "dashboard",
 ]
 
-INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
+# daphne must be first app in installded apps
+INSTALLED_APPS = ["daphne",] + DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 
 SITE_ID = 1
 
@@ -83,6 +84,8 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = "core.urls"
+
+ASGI_APPLICATION = "core.asgi.application"
 
 TEMPLATES = [
     {
