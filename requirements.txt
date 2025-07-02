@@ -9,6 +9,7 @@ amqp==5.3.1
 asgiref==3.8.1
     # via
     #   channels
+    #   channels-redis
     #   daphne
     #   django
     #   django-cors-headers
@@ -33,6 +34,10 @@ certifi==2025.1.31
 cffi==1.17.1
     # via cryptography
 channels[daphne]==4.2.2
+    # via
+    #   -r requirements.in
+    #   channels-redis
+channels-redis==4.2.1
     # via -r requirements.in
 charset-normalizer==3.4.1
     # via requests
@@ -130,6 +135,8 @@ jsonschema-specifications==2024.10.1
     # via jsonschema
 kombu==5.5.3
     # via celery
+msgpack==1.1.1
+    # via channels-redis
 oauthlib==3.2.2
     # via requests-oauthlib
 pillow==10.3.0
@@ -161,6 +168,7 @@ pyyaml==6.0.2
 redis==5.0.1
     # via
     #   -r requirements.in
+    #   channels-redis
     #   django-redis
 referencing==0.36.2
     # via

@@ -58,6 +58,7 @@ THIRD_PARTY_APPS = [
     "cloudinary_storage",
     "cloudinary",
     "corsheaders",
+    "channels",
 ]
 
 LOCAL_APPS = [
@@ -65,6 +66,7 @@ LOCAL_APPS = [
     "courses",
     "enrollment",
     "dashboard",
+    "chat",
 ]
 
 # daphne must be first app in installded apps
@@ -258,6 +260,19 @@ CACHES = {
 # Session settings
 SESSION_ENGINE = "django.contrib.sessions.backends.cache"
 SESSION_CACHE_ALIAS = "default"
+
+# ASGI Application
+ASGI_APPLICATION = "core.asgi.application"
+
+# Channel Layers
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("127.0.0.1", 6379)],
+        },
+    },
+}
 
 # Celery Configuration
 CELERY_BROKER_URL = env("CELERY_BROKER_URL", default="redis://127.0.0.1:6379/0")
